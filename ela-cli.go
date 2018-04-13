@@ -6,18 +6,23 @@ import (
 
 	"github.com/urfave/cli"
 
-	"github.com/elastos/Elastos.ELA.Client.Core/cli/info"
-	"github.com/elastos/Elastos.ELA.Client.Core/cli/wallet"
-	"github.com/elastos/Elastos.ELA.Client.Core/cli/mine"
-	"github.com/elastos/Elastos.ELA.Client.Core/common/log"
-	cliLog "github.com/elastos/Elastos.ELA.Client.Core/cli/log"
-	_ "github.com/elastos/Elastos.ELA.Client.SideChain/rpc"
-	_ "github.com/elastos/Elastos.ELA.Client.SideChain/cli/wallet"
+	"github.com/elastos/Elastos.ELA.Client/cli/info"
+	"github.com/elastos/Elastos.ELA.Client/cli/mine"
+	"github.com/elastos/Elastos.ELA.Client/common/log"
+	cliLog "github.com/elastos/Elastos.ELA.Client/cli/log"
+	"github.com/elastos/Elastos.ELA.Client/rpc"
+	clientWallet "github.com/elastos/Elastos.ELA.Client/cli/wallet"
+	"github.com/elastos/Elastos.ELA.Client.SideChain/cli/wallet"
+	"github.com/elastos/Elastos.ELA.Client.SideChain/common/config"
 )
 
 var Version string
 
 func init() {
+	rpc.Url = config.Params().Host
+	clientWallet.SingleTransactionCreatorSingleton = &wallet.SingleTransactionCreatorSideImpl{
+		&clientWallet.SingleTransactionCreatorImpl{}}
+
 	log.InitLog()
 }
 
@@ -34,7 +39,7 @@ func main() {
 	app.Commands = []cli.Command{
 		*cliLog.NewCommand(),
 		*info.NewCommand(),
-		*wallet.NewCommand(),
+		*clientWallet.NewCommand(),
 		*mine.NewCommand(),
 	}
 	sort.Sort(cli.CommandsByName(app.Commands))
