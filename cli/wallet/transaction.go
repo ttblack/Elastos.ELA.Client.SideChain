@@ -60,6 +60,7 @@ func createTransaction(c *cli.Context, wallet walt.Wallet) error {
 	standard := c.String("to")
 	deposit := c.String("deposit")
 	withdraw := c.String("withdraw")
+
 	if deposit != "" {
 		to = config.Params().DepositAddress
 		txn, err = wallet.CreateCrossChainTransaction(from, to, deposit, amount, fee)
@@ -146,6 +147,85 @@ func createMultiOutputTransaction(c *cli.Context, wallet walt.Wallet, path, from
 	output(0, 0, txn)
 
 	return nil
+}
+
+func CreateDeployTransaction(c *cli.Context, wallet walt.Wallet, codeStr string) error {
+
+	feeStr := c.String("fee")
+	if feeStr == "" {
+		return errors.New("use --fee to specify transfer fee")
+	}
+
+	fee, err := StringToFixed64(feeStr)
+	if err != nil {
+		return errors.New("invalid transaction fee")
+	}
+
+	from := c.String("from")
+	if from == "" {
+		from, err = SelectAccount(wallet)
+		if err != nil {
+			return err
+		}
+	}
+
+	to := c.String("to")
+	txn, err := wallet.CreateDeployTransaction(from, to, codeStr, fee)
+
+	output(0,0, txn);
+	return  nil;
+}
+
+func CreateInvokeTransaction(c *cli.Context, wallet walt.Wallet) error {
+	paramsStr := c.String("params")
+	codeHashStr := c.String("codeHash")
+	if codeHashStr == "" {
+		return errors.New("missing args [--codeHash]")
+	}
+	if paramsStr == "" {
+		return errors.New("missing args [--params]")
+	}
+	program, err := HexStringToBytes(paramsStr)
+	if err != nil {
+		return errors.New("convert params error")
+	}
+	var codeHashBytes []byte
+	codeHashBytes, err = HexStringToBytes(codeHashStr)
+	if err != nil {
+		return errors.New("convert code error")
+	}
+
+	program = append(program, 0x69)
+	program = append(program, codeHashBytes...)
+
+	codeHash, err := Uint168FromBytes(codeHashBytes)
+	if err != nil {
+		return err
+	}
+
+	feeStr := c.String("fee")
+	if feeStr == "" {
+		return errors.New("use --fee to specify transfer fee")
+	}
+
+	fee, err := StringToFixed64(feeStr)
+	if err != nil {
+		return errors.New("invalid transaction fee")
+	}
+
+	from := c.String("from")
+	if from == "" {
+		from, err = SelectAccount(wallet)
+		if err != nil {
+			return err
+		}
+	}
+
+	to := c.String("to")
+
+	txn, err := wallet.CreateInvokeTransaction(from, to,program, *codeHash, fee)
+	output(0,0, txn);
+	return  nil;
 }
 
 func signTransaction(name string, password []byte, context *cli.Context, wallet walt.Wallet) error {
