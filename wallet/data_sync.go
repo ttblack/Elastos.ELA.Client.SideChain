@@ -4,12 +4,12 @@ import (
 	"encoding/json"
 	"os"
 
-	"github.com/elastos/Elastos.ELA.Client/log"
-	. "github.com/elastos/Elastos.ELA.Client/rpc"
+	"github.com/elastos/Elastos.ELA.Client.SideChain/log"
+	. "github.com/elastos/Elastos.ELA.Client.SideChain/rpc"
 
 	"github.com/cheggaaa/pb"
 	. "github.com/elastos/Elastos.ELA.Utility/common"
-	. "github.com/elastos/Elastos.ELA/core"
+	. "github.com/elastos/Elastos.ELA.SideChain/core"
 )
 
 type DataSync interface {

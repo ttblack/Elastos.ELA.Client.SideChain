@@ -1,7 +1,7 @@
 package rpc
 
 import (
-	. "github.com/elastos/Elastos.ELA/core"
+	. "github.com/elastos/Elastos.ELA.SideChain/core"
 )
 
 const TlsPort = 443

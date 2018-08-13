@@ -8,11 +8,11 @@ import (
 	"math/rand"
 	"strconv"
 
-	"github.com/elastos/Elastos.ELA.Client/log"
+	"github.com/elastos/Elastos.ELA.Client.SideChain/log"
 
 	. "github.com/elastos/Elastos.ELA.Utility/common"
 	"github.com/elastos/Elastos.ELA.Utility/crypto"
-	. "github.com/elastos/Elastos.ELA/core"
+	. "github.com/elastos/Elastos.ELA.SideChain/core"
 )
 
 const (

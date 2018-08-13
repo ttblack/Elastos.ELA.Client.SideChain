@@ -7,8 +7,8 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/elastos/Elastos.ELA.Client/log"
-	"github.com/elastos/Elastos.ELA.Client/wallet"
+	"github.com/elastos/Elastos.ELA.Client.SideChain/log"
+	"github.com/elastos/Elastos.ELA.Client.SideChain/wallet"
 
 	"github.com/elastos/Elastos.ELA.Utility/common"
 	"github.com/urfave/cli"
@@ -279,7 +279,7 @@ func NewCommand() *cli.Command {
 	return &cli.Command{
 		Name:        "wallet",
 		Usage:       "wallet operations",
-		Description: "With ela-cli wallet, you can create an account, check account balance or build, sign and send transactions.",
+		Description: "With side-cli wallet, you can create an account, check account balance or build, sign and send transactions.",
 		ArgsUsage:   "[args]",
 		Flags: []cli.Flag{
 			cli.StringFlag{

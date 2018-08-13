@@ -4,11 +4,11 @@ import (
 	"os"
 	"sort"
 
-	"github.com/elastos/Elastos.ELA.Client/cli/info"
-	"github.com/elastos/Elastos.ELA.Client/cli/wallet"
-	"github.com/elastos/Elastos.ELA.Client/cli/mine"
-	"github.com/elastos/Elastos.ELA.Client/log"
-	cliLog "github.com/elastos/Elastos.ELA.Client/cli/log"
+	"github.com/elastos/Elastos.ELA.Client.SideChain/cli/info"
+	"github.com/elastos/Elastos.ELA.Client.SideChain/cli/wallet"
+	"github.com/elastos/Elastos.ELA.Client.SideChain/cli/mine"
+	"github.com/elastos/Elastos.ELA.Client.SideChain/log"
+	cliLog "github.com/elastos/Elastos.ELA.Client.SideChain/cli/log"
 	"github.com/urfave/cli"
 )
 
@@ -20,11 +20,11 @@ func init() {
 
 func main() {
 	app := cli.NewApp()
-	app.Name = "ela-cli"
+	app.Name = "side-cli"
 	app.Version = Version
-	app.HelpName = "ela-cli"
+	app.HelpName = "side-cli"
 	app.Usage = "command line tool for ELA blockchain"
-	app.UsageText = "ela-cli [global options] command [command options] [args]"
+	app.UsageText = "side-cli [global options] command [command options] [args]"
 	app.HideHelp = false
 	app.HideVersion = false
 	//commands

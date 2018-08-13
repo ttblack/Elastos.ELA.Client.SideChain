@@ -8,7 +8,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/elastos/Elastos.ELA.Client/config"
+	"github.com/elastos/Elastos.ELA.Client.SideChain/config"
 
 	"github.com/elastos/Elastos.ELA.Utility/common"
 )

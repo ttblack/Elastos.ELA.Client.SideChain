@@ -1,12 +1,12 @@
-# Elastos.ELA.Client
+# Elastos.ELA.Client.SideChain
 
 ## Summary
-This is the client program of the ELA node, which is a command line tool to control node and see node info etc.
-Also, this project including a light implementation of ELA wallet, which can create your ELA account, do receive, create, sign or send transactions.
+This is the client program of the ELA side chain node, which is a command line tool to control node and see node info etc.
+Also, this project including a light implementation of ELA side chain wallet, which can create your ELA account, do receive, create, sign or send transactions.
 You can run a node locally and set the miner address to your wallet account, then run the node to get your own ELAs and do whatever you like.
 
 ## Wiki
-For more details, please check on this [Wiki](https://github.com/elastos/Elastos.ELA.Client/wiki) page.
+For more details, please check on this [Wiki](https://github.com/elastos/Elastos.ELA.Client.SideChain/wiki) page.
 
 ## Build on Mac
 
@@ -67,10 +67,10 @@ If you cannot see the version number, there must be something wrong when install
 ### Clone source code to $GOPATH/src/github.com/elastos/ folder
 Make sure you are in the folder of `$GOPATH/src/github.com/elastos/`
 ```shell
-$ go clone https://github.com/elastos/Elastos.ELA.Client.git
+$ git clone https://github.com/elastos/Elastos.ELA.Client.SideChain.git
 ```
 
-If clone works successfully, you should see folder structure like $GOPATH/src/github.com/elastos/Elastos.ELA.Client/Makefile
+If clone works successfully, you should see folder structure like $GOPATH/src/github.com/elastos/Elastos.ELA.Client.SideChain/Makefile
 
 ### Glide install
 
@@ -79,12 +79,12 @@ Run `glide update && glide install` to download project dependencies.
 ### Install sqlite database
 This will make the `make` progress far more faster.
 ```shell
-go install github.com/elastos/Elastos.ELA.Client/vendor/github.com/mattn/go-sqlite3
+go install github.com/elastos/Elastos.ELA.Client.SideChain/vendor/github.com/mattn/go-sqlite3
 ```
 
 ### Make
 
-Run `make` to build the executable files `ela-cli`
+Run `make` to build the executable files `side-cli`
 
 ## Run on Mac
 ## Build on Ubuntu
@@ -151,10 +151,10 @@ If you cannot see the version number, there must be something wrong when install
 ### Clone source code to $GOPATH/src/github.com/elastos/ folder
 Make sure you are in the folder of `$GOPATH/src/github.com/elastos/`
 ```shell
-$ git clone https://github.com/elastos/Elastos.ELA.Client.git
+$ git clone https://github.com/elastos/Elastos.ELA.Client.SideChain.git
 ```
 
-If clone works successfully, you should see folder structure like $GOPATH/src/github.com/elastos/Elastos.ELA.Client/Makefile
+If clone works successfully, you should see folder structure like $GOPATH/src/github.com/elastos/Elastos.ELA.Client.SideChain/Makefile
 
 ### Glide install
 
@@ -163,38 +163,38 @@ Run `glide update && glide install` to install depandencies.
 ### Install sqlite database
 This will make the `make` progress far more fester.
 ```shell
-go install github.com/elastos/Elastos.ELA.Client/vendor/github.com/mattn/go-sqlite3
+go install github.com/elastos/Elastos.ELA.Client.SideChain/vendor/github.com/mattn/go-sqlite3
 ```
 
 ### Make
 
-Run `make` to build the executable files `ela-cli`
+Run `make` to build the executable files `side-cli`
 
 
 ## Run on Mac/Ubuntu
 
 ### Set up configuration file
-A file named `cli-config.json` should be placed in the same folder with `ela-cli` with the parameters as below.
+A file named `cli-config.json` should be placed in the same folder with `side-cli` with the parameters as below.
 ```
 {
     "Host": "127.0.0.1:20336"
 }
 ```
-> `Host` is the IP and Port witch this client is communicate with. Usually `ela-cli` is working with `node` together on the same machine，
+> `Host` is the IP and Port witch this client is communicate with. Usually `side-cli` is working with `node` together on the same machine，
 so mostly IP is set to `localhost` and `Port` value is according to the `HttpJsonPort` value set in the node `config.json` file.
 
 ### See node info
 As the node is running, you can ge information from it by using `info` commands.
 ```shell
-$ ./ela-cli info
+$ ./side-cli info
 NAME:
-   ela-cli info - show node information
+   side-cli info - show node information
 
 USAGE:
-   ela-cli info [command options] [args]
+   side-cli info [command options] [args]
 
 DESCRIPTION:
-   With ela-cli info, you could look up node status, query blocks, transactions, etc.
+   With side-cli info, you could look up node status, query blocks, transactions, etc.
 
 OPTIONS:
    --connections                         see how many peers are connected with current node
@@ -211,15 +211,15 @@ OPTIONS:
 With `mine` command, you can toggle the node CPU mining, and when testing or try something else, waiting for the CPU mining is a waste of time, manual mine command can solve this problem.
 To use manual mine, `ActiveNet` parameter in node config file should be set to `RegNet` and `AutoMining` must be set to `false`.
 ```shell
-$ ./ela-cli mine
+$ ./side-cli mine
 NAME:
-   ela-cli mine - toggle cpu mining or manual mine
+   side-cli mine - toggle cpu mining or manual mine
 
 USAGE:
-   ela-cli mine [command options] [args]
+   side-cli mine [command options] [args]
 
 DESCRIPTION:
-   With ela-cli mine, you can toggle cpu mining, or manual mine blocks.
+   With side-cli mine, you can toggle cpu mining, or manual mine blocks.
 
 OPTIONS:
    --toggle value, -t value  use --toggle [start, stop] to toggle cpu mining
@@ -229,15 +229,15 @@ OPTIONS:
 ### Log
 This is the command to control node log print level, levels are from 0~6, the lower level the more logs will be print out, 0 means print out everything.
 ```shell
-$ ./ela-cli log
+$ ./side-cli log
 NAME:
-   ela-cli log - set node log output level
+   side-cli log - set node log output level
 
 USAGE:
-   ela-cli log [command options] [args]
+   side-cli log [command options] [args]
 
 DESCRIPTION:
-   With ela-cli log, you could change node log output level.
+   With side-cli log, you could change node log output level.
    levels are 0~6, the lower level the more logs will be print out, 0 means print out everything
 
 OPTIONS:
@@ -248,17 +248,17 @@ OPTIONS:
 For test purpose, this command line client implemented a simplified wallet program. You can use it to create your ELA account, check account balance and build, sign or send transactions.
 #### Tips
 > for some reason, when using multiple command options, the option with no arguments must be put at the last, for example
-`$ ./ela-cli wallet --name my_wallet.dat --password Elastos --create`, in this case, `--create` must be put at the last, or the command will no work correctly.
+`$ ./side-cli wallet --name my_wallet.dat --password Elastos --create`, in this case, `--create` must be put at the last, or the command will no work correctly.
 ```shell
-$ ./ela-cli wallet
+$ ./side-cli wallet
 NAME:
-   ela-cli wallet - wallet operations
+   side-cli wallet - wallet operations
 
 USAGE:
-   ela-cli wallet [command options] [args]
+   side-cli wallet [command options] [args]
 
 DESCRIPTION:
-   With ela-cli wallet, you can create an account, check account balance or build, sign and send transactions.
+   With side-cli wallet, you can create an account, check account balance or build, sign and send transactions.
 
 OPTIONS:
    --password value, -p value     arguments to pass the password value
@@ -294,15 +294,15 @@ OPTIONS:
 ### Examples
 Create the wallet
 
-`$ ./ela-cli wallet --create` or `$ ./ela-cli wallet -c`
+`$ ./side-cli wallet --create` or `$ ./side-cli wallet -c`
 
 Create a wallet with password arguments
 
-`$ ./ela-cli wallet --password Elastos --create`
+`$ ./side-cli wallet --password Elastos --create`
 
 Show account information
 
-`$ ./ela-cli wallet --account` or `$ ./ela-cli wallet -a`
+`$ ./side-cli wallet --account` or `$ ./side-cli wallet -a`
 ```shell
 Password:
 --------------------------------------------------------------------------------
@@ -314,7 +314,7 @@ ProgramHash:  7721066f3791c6df687300c9706236544baaad9f21
 
 Show account balance
 
-`$ ./ela-cli wallet --list` or `$ ./ela-cli wallet -l`
+`$ ./side-cli wallet --list` or `$ ./side-cli wallet -l`
 ```shell
 201 / 201 [=========================================================] 100.00% 0s
 --------------------------------------------------------------------------------
@@ -330,19 +330,19 @@ Balance:      0
 
 Create a transaction
 
-`$ ./ela-cli wallet -t create --from EXiCyZBdvguJU5upFGZwUQMJFB53TBb6km --to EXYPqZpQQk4muDrdXoRNJhCpoQtFBQetYg --amount 10000 --fee 0.00001`
+`$ ./side-cli wallet -t create --from EXiCyZBdvguJU5upFGZwUQMJFB53TBb6km --to EXYPqZpQQk4muDrdXoRNJhCpoQtFBQetYg --amount 10000 --fee 0.00001`
 
 Create a multi output transaction
 
-`$ ./ela-cli wallet -t create --from 8JiMvfWKDwEeFNY3KN38PBif19ZhGGF9MH --file addresses.csv --fee 0.00001`
+`$ ./side-cli wallet -t create --from 8JiMvfWKDwEeFNY3KN38PBif19ZhGGF9MH --file addresses.csv --fee 0.00001`
 
 Sign a transaction
 
-`$ ./ela-cli wallet -t sign --file to_be_signed.txn`
+`$ ./side-cli wallet -t sign --file to_be_signed.txn`
 
 Send a transaction
 
-`$ ./ela-cli wallet -t send --file ready_to_send.txn`
+`$ ./side-cli wallet -t send --file ready_to_send.txn`
 
 ## License
-Elastos client source code files are made available under the MIT License, located in the LICENSE file.
+Elastos side chain client source code files are made available under the MIT License, located in the LICENSE file.

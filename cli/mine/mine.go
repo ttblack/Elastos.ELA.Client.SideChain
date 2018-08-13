@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/elastos/Elastos.ELA.Client/rpc"
+	"github.com/elastos/Elastos.ELA.Client.SideChain/rpc"
 
 	"github.com/urfave/cli"
 )
@@ -64,7 +64,7 @@ func NewCommand() *cli.Command {
 	return &cli.Command{
 		Name:        "mine",
 		Usage:       "toggle cpu mining or manual mine",
-		Description: "With ela-cli mine, you can toggle cpu mining, or manual mine blocks.",
+		Description: "With side-cli mine, you can toggle cpu mining, or manual mine blocks.",
 		ArgsUsage:   "[args]",
 		Flags: []cli.Flag{
 			cli.StringFlag{

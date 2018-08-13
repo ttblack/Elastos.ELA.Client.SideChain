@@ -7,10 +7,10 @@ import (
 	"os"
 	"sync"
 
-	"github.com/elastos/Elastos.ELA.Client/log"
+	"github.com/elastos/Elastos.ELA.Client.SideChain/log"
 
 	. "github.com/elastos/Elastos.ELA.Utility/common"
-	. "github.com/elastos/Elastos.ELA/core"
+	. "github.com/elastos/Elastos.ELA.SideChain/core"
 	_ "github.com/mattn/go-sqlite3"
 )
 

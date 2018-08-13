@@ -13,7 +13,7 @@ build/
 *.rej
 Log
 vendor/*
-ela-cli
+side-cli
 cscope*
 deps/
 *.dat

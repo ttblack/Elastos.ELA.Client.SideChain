@@ -3,7 +3,7 @@ package log
 import (
 	"fmt"
 
-	"github.com/elastos/Elastos.ELA.Client/rpc"
+	"github.com/elastos/Elastos.ELA.Client.SideChain/rpc"
 
 	"github.com/urfave/cli"
 )
@@ -30,7 +30,7 @@ func debugAction(c *cli.Context) error {
 func NewCommand() *cli.Command {
 	return &cli.Command{Name: "log",
 		Usage: "set node log output level",
-		Description: "With ela-cli log, you could change node log output level.\n" +
+		Description: "With side-cli log, you could change node log output level.\n" +
 			"\t levels are 0~6, the lower level the more logs will be print out, 0 means print out everything",
 		ArgsUsage: "[args]",
 		Flags: []cli.Flag{

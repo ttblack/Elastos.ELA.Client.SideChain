@@ -7,7 +7,7 @@ import (
 	"strings"
 	"io/ioutil"
 
-	. "github.com/elastos/Elastos.ELA.Client/wallet"
+	. "github.com/elastos/Elastos.ELA.Client.SideChain/wallet"
 
 	. "github.com/elastos/Elastos.ELA.Utility/common"
 	"github.com/elastos/Elastos.ELA.Utility/crypto"

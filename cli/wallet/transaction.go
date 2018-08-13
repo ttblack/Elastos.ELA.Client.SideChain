@@ -10,13 +10,13 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/elastos/Elastos.ELA.Client/config"
-	"github.com/elastos/Elastos.ELA.Client/log"
-	"github.com/elastos/Elastos.ELA.Client/rpc"
-	walt "github.com/elastos/Elastos.ELA.Client/wallet"
+	"github.com/elastos/Elastos.ELA.Client.SideChain/config"
+	"github.com/elastos/Elastos.ELA.Client.SideChain/log"
+	"github.com/elastos/Elastos.ELA.Client.SideChain/rpc"
+	walt "github.com/elastos/Elastos.ELA.Client.SideChain/wallet"
 	. "github.com/elastos/Elastos.ELA.Utility/common"
 	"github.com/elastos/Elastos.ELA.Utility/crypto"
-	. "github.com/elastos/Elastos.ELA/core"
+	. "github.com/elastos/Elastos.ELA.SideChain/core"
 	"github.com/urfave/cli"
 )
 
