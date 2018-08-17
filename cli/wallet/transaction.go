@@ -149,7 +149,7 @@ func createMultiOutputTransaction(c *cli.Context, wallet walt.Wallet, path, from
 	return nil
 }
 
-func CreateDeployTransaction(c *cli.Context, wallet walt.Wallet, codeStr string) error {
+func CreateDeployTransaction(c *cli.Context, wallet walt.Wallet, codeStr string, parameterTypes []byte, returnType byte) error {
 
 	feeStr := c.String("fee")
 	if feeStr == "" {
@@ -170,7 +170,7 @@ func CreateDeployTransaction(c *cli.Context, wallet walt.Wallet, codeStr string)
 	}
 
 	to := c.String("to")
-	txn, err := wallet.CreateDeployTransaction(from, to, codeStr, fee)
+	txn, err := wallet.CreateDeployTransaction(from, to, codeStr, parameterTypes, returnType, fee)
 
 	output(0,0, txn);
 	return  nil;

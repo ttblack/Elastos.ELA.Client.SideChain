@@ -10,6 +10,7 @@ import (
 
 	"github.com/elastos/Elastos.ELA.Utility/common"
 	"github.com/urfave/cli"
+	"github.com/elastos/Elastos.ELA.SideChain/contract"
 )
 
 func contractAction(context *cli.Context) error {
@@ -64,7 +65,29 @@ func contractAction(context *cli.Context) error {
 			codeStr = common.BytesToHexString(bytes)
 		}
 
-		err = wallet2.CreateDeployTransaction(context, walletImpl, codeStr)
+		paramsStr := context.String("params")
+		fmt.Println("paramstr=", paramsStr)
+		var params []byte = []byte{}
+		if paramsStr != "" {
+			params, err = common.HexStringToBytes(paramsStr)
+			if err != nil {
+				fmt.Println("error:", err)
+				os.Exit(701)
+			}
+		}
+		returnStr := context.String("returnType")
+		fmt.Println("returnStr=", returnStr)
+		returnType := byte(contract.Void)
+		if returnStr != "" {
+			types, err := common.HexStringToBytes(returnStr)
+			if err != nil {
+				fmt.Println("error:", err)
+				os.Exit(701)
+			}
+			returnType = types[0]
+		}
+
+		err = wallet2.CreateDeployTransaction(context, walletImpl, codeStr, params, returnType)
 		if err != nil {
 			fmt.Println("error:", err)
 			os.Exit(701)
@@ -120,6 +143,10 @@ func NewCommand() *cli.Command {
 			cli.StringFlag{
 				Name:  "params, p",
 				Usage: "invoke contract compiler contract params",
+			},
+			cli.StringFlag{
+				Name: "returnType, r",
+				Usage: "smartContract execute return value type",
 			},
 			cli.StringFlag{
 				Name:  "codeHash, a",

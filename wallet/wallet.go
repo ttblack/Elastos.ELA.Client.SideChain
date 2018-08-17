@@ -49,7 +49,7 @@ type Wallet interface {
 	CreateMultiOutputTransaction(fromAddress string, fee *Fixed64, output ...*Transfer) (*Transaction, error)
 	CreateLockedMultiOutputTransaction(fromAddress string, fee *Fixed64, lockedUntil uint32, output ...*Transfer) (*Transaction, error)
 	CreateCrossChainTransaction(fromAddress, toAddress, crossChainAddress string, amount, fee *Fixed64) (*Transaction, error)
-	CreateDeployTransaction(fromAddress, toAddress, codeStr string, fee *Fixed64) (*Transaction, error)
+	CreateDeployTransaction(fromAddress, toAddress, codeStr string, ParameterTypes []byte, ReturnType byte, fee *Fixed64) (*Transaction, error)
 	CreateInvokeTransaction(fromAddress, toAddress string, code []byte, codeHash Uint168, fee *Fixed64) (*Transaction, error)
 
 	Sign(name string, password []byte, transaction *Transaction) (*Transaction, error)
@@ -335,7 +335,7 @@ func (wallet *WalletImpl) createCrossChainTransaction(fromAddress string, fee *F
 	return txn, nil
 }
 
-func (wallet *WalletImpl) CreateDeployTransaction(fromAddress, toAddress, codeStr string, fee *Fixed64) (*Transaction, error) {
+func (wallet *WalletImpl) CreateDeployTransaction(fromAddress, toAddress, codeStr string, parameterTypes []byte, returnType byte, fee *Fixed64) (*Transaction, error) {
 	// Sync chain block data before create transaction
 	wallet.SyncChainData()
 	// Check if from address is valid
@@ -402,8 +402,8 @@ func (wallet *WalletImpl) CreateDeployTransaction(fromAddress, toAddress, codeSt
 
 	fc := contract.FunctionCode{
 		Code: code,
-		ParameterTypes: []contract.ContractParameterType{contract.ByteArray, contract.ByteArray},
-		ReturnType:     contract.ContractParameterType(contract.String),
+		ParameterTypes: contract.ByteToContractParameterType(parameterTypes),
+		ReturnType:     contract.ContractParameterType(returnType),
 	}
 
 	txn.Payload = &PayloadDeploy{
