@@ -5,20 +5,41 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"strconv"
 	"strings"
+	"encoding/json"
+	"io/ioutil"
 
 	"github.com/elastos/Elastos.ELA.Client.SideChain/config"
 	"github.com/elastos/Elastos.ELA.Client.SideChain/log"
 	"github.com/elastos/Elastos.ELA.Client.SideChain/rpc"
 	walt "github.com/elastos/Elastos.ELA.Client.SideChain/wallet"
-	. "github.com/elastos/Elastos.ELA.Utility/common"
-	"github.com/elastos/Elastos.ELA.Utility/crypto"
 	. "github.com/elastos/Elastos.ELA.SideChain/core"
+	"github.com/elastos/Elastos.ELA.SideChain/contract"
+	"github.com/elastos/Elastos.ELA.SideChain/vm"
+	"github.com/elastos/Elastos.ELA.Utility/crypto"
+	. "github.com/elastos/Elastos.ELA.Utility/common"
 	"github.com/urfave/cli"
 )
+
+func createSmartContractTransaction(c *cli.Context, wallet walt.Wallet, fee *Fixed64) error {
+
+	deploy := c.Bool("deploy")
+	invoke := c.Bool("invoke")
+
+	if deploy && invoke {
+		return errors.New("I don't know what to do when both with --deploy and --invoke")
+	}
+
+	if (deploy) {
+		return createDeployTransaction(c, wallet, fee)
+	} else if (invoke) {
+		return CreateInvokeTransaction(c, wallet, fee)
+	}
+
+	return errors.New("Create smart contract tx with invalid parameters")
+}
 
 func createTransaction(c *cli.Context, wallet walt.Wallet) error {
 
@@ -30,6 +51,10 @@ func createTransaction(c *cli.Context, wallet walt.Wallet) error {
 	fee, err := StringToFixed64(feeStr)
 	if err != nil {
 		return errors.New("invalid transaction fee")
+	}
+
+	if c.Bool("deploy") || c.Bool("invoke") {
+		return createSmartContractTransaction(c, wallet, fee)
 	}
 
 	from := c.String("from")
@@ -149,18 +174,8 @@ func createMultiOutputTransaction(c *cli.Context, wallet walt.Wallet, path, from
 	return nil
 }
 
-func CreateDeployTransaction(c *cli.Context, wallet walt.Wallet, codeStr string, parameterTypes []byte, returnType byte) error {
-
-	feeStr := c.String("fee")
-	if feeStr == "" {
-		return errors.New("use --fee to specify transfer fee")
-	}
-
-	fee, err := StringToFixed64(feeStr)
-	if err != nil {
-		return errors.New("invalid transaction fee")
-	}
-
+func createDeployTransaction(c *cli.Context, wallet walt.Wallet, fee *Fixed64) error {
+	var err error
 	from := c.String("from")
 	if from == "" {
 		from, err = SelectAccount(wallet)
@@ -169,33 +184,119 @@ func CreateDeployTransaction(c *cli.Context, wallet walt.Wallet, codeStr string,
 		}
 	}
 
-	to := c.String("to")
-	txn, err := wallet.CreateDeployTransaction(from, to, codeStr, parameterTypes, returnType, fee)
+	code := []byte{}
 
-	output(0,0, txn);
-	return  nil;
+	codeString := c.String("hex")
+	avm := c.String("avm")
+	if codeString != "" {
+		code, err = HexStringToBytes(codeString)
+		if err != nil {
+			return err
+		}
+	} else if avm != "" {
+		code, err = ioutil.ReadFile(avm)
+		if err != nil {
+			return err
+		}
+	} else {
+		return errors.New("Create deploy tx should with --hex <code hex> or --avm <avm file> parameter")
+	}
+
+	if len(code) == 0 {
+		return errors.New("Invalid code with --hex <code>")
+	}
+
+	params := make([]string, 0)
+	err = json.Unmarshal([]byte(c.String("params")), &params)
+	if err != nil {
+		return errors.New("Invalid format with --params <parameter type json>")
+	}
+
+	paramTypes := []byte{}
+	for _, v := range params {
+		if paramType, ok := contract.ParameterTypeMap[v]; ok {
+			paramTypes = append(paramTypes, byte(paramType))
+		} else {
+			return errors.New(fmt.Sprint("Unsupport parameter type: \"", v, "\""))
+		}
+	}
+
+	if len(paramTypes) == 0 {
+		paramTypes = []byte{contract.Void}
+	}
+
+	returnTypeString := c.String("returntype")
+	returnType, ok := contract.ParameterTypeMap[returnTypeString]
+	if !ok {
+		return errors.New(fmt.Sprint("Unsupport return type: \"", returnTypeString, "\""))
+	}
+
+	messageJson := c.String("msg")
+	message := make(map[string]string, 0)
+	if messageJson != "" {
+		err = json.Unmarshal([]byte(messageJson), &message)
+		if err != nil {
+			return errors.New("Invalid args --msg <message json>")
+		}
+	}
+
+	txn, err := wallet.CreateDeployTransaction(from, code, paramTypes, byte(returnType), message, fee)
+
+	return output(0, 0, txn);
 }
 
-func CreateInvokeTransaction(c *cli.Context, wallet walt.Wallet) error {
-	paramsStr := c.String("params")
-	codeHashStr := c.String("codeHash")
-	if codeHashStr == "" {
-		return errors.New("missing args [--codeHash]")
+func CreateInvokeTransaction(c *cli.Context, wallet walt.Wallet, fee *Fixed64) error {
+	paramsString := c.String("params")
+	if paramsString == "" {
+		return errors.New("Missing args --params <parameter json>")
 	}
-	if paramsStr == "" {
-		return errors.New("missing args [--params]")
-	}
-	program, err := HexStringToBytes(paramsStr)
+
+	builder := vm.NewParamsBuider(new(bytes.Buffer))
+	params := make([]map[string]interface{}, 0)
+	err := json.Unmarshal([]byte(c.String("params")), &params)
 	if err != nil {
-		return errors.New("convert params error")
+		return errors.New("Invalid format with --params <parameter type json>")
 	}
+	for _, v := range params {
+		if len(v) != 1 {
+			return errors.New("Invalid --params <parameter json>")
+		}
+		for paramType, paramValue := range v {
+			pt := contract.ParameterTypeMap[paramType]
+			switch pt {
+			case contract.Boolean:
+				builder.EmitPushBool(paramValue.(bool))
+			case contract.Integer:
+				value := paramValue.(float64)
+				builder.EmitPushInteger(int64(value))
+			case contract.String:
+				builder.EmitPushByteArray([]byte(paramValue.(string)))
+			case contract.ByteArray, contract.Hash256, contract.Hash160:
+				paramBytes, err := HexStringToBytes(paramValue.(string))
+				if err != nil {
+					return errors.New(fmt.Sprint("Invalid param \"", paramType, "\": ", paramValue))
+				}
+				builder.EmitPushByteArray(paramBytes)
+			}
+		}
+	}
+	program := builder.Bytes()
+	if len(program) == 0 {
+		return errors.New("Invalid --params <parameter json>")
+	}
+
+	codeHashStr := c.String("hex")
+	if codeHashStr == "" {
+		return errors.New("Missing args --hex <code hash>")
+	}
+
 	var codeHashBytes []byte
 	codeHashBytes, err = HexStringToBytes(codeHashStr)
 	if err != nil {
 		return errors.New("convert code error")
 	}
 
-	program = append(program, 0x69)
+	program = append(program, vm.TAILCALL)
 	program = append(program, codeHashBytes...)
 
 	codeHash, err := Uint168FromBytes(codeHashBytes)
@@ -203,16 +304,6 @@ func CreateInvokeTransaction(c *cli.Context, wallet walt.Wallet) error {
 		return err
 	}
 
-	feeStr := c.String("fee")
-	if feeStr == "" {
-		return errors.New("use --fee to specify transfer fee")
-	}
-
-	fee, err := StringToFixed64(feeStr)
-	if err != nil {
-		return errors.New("invalid transaction fee")
-	}
-
 	from := c.String("from")
 	if from == "" {
 		from, err = SelectAccount(wallet)
@@ -221,11 +312,12 @@ func CreateInvokeTransaction(c *cli.Context, wallet walt.Wallet) error {
 		}
 	}
 
-	to := c.String("to")
+	txn, err := wallet.CreateInvokeTransaction(from, program, codeHash, fee)
+	if err != nil {
+		return errors.New("Create invoke tx error")
+	}
 
-	txn, err := wallet.CreateInvokeTransaction(from, to,program, *codeHash, fee)
-	output(0,0, txn);
-	return  nil;
+	return output(0, 0, txn);
 }
 
 func signTransaction(name string, password []byte, context *cli.Context, wallet walt.Wallet) error {

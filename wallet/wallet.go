@@ -49,8 +49,8 @@ type Wallet interface {
 	CreateMultiOutputTransaction(fromAddress string, fee *Fixed64, output ...*Transfer) (*Transaction, error)
 	CreateLockedMultiOutputTransaction(fromAddress string, fee *Fixed64, lockedUntil uint32, output ...*Transfer) (*Transaction, error)
 	CreateCrossChainTransaction(fromAddress, toAddress, crossChainAddress string, amount, fee *Fixed64) (*Transaction, error)
-	CreateDeployTransaction(fromAddress, toAddress, codeStr string, ParameterTypes []byte, ReturnType byte, fee *Fixed64) (*Transaction, error)
-	CreateInvokeTransaction(fromAddress, toAddress string, code []byte, codeHash Uint168, fee *Fixed64) (*Transaction, error)
+	CreateDeployTransaction(fromAddress string, code, ParameterTypes []byte, ReturnType byte, msg map[string]string, fee *Fixed64) (*Transaction, error)
+	CreateInvokeTransaction(fromAddress string, code []byte, codeHash *Uint168, fee *Fixed64) (*Transaction, error)
 
 	Sign(name string, password []byte, transaction *Transaction) (*Transaction, error)
 
@@ -335,7 +335,7 @@ func (wallet *WalletImpl) createCrossChainTransaction(fromAddress string, fee *F
 	return txn, nil
 }
 
-func (wallet *WalletImpl) CreateDeployTransaction(fromAddress, toAddress, codeStr string, parameterTypes []byte, returnType byte, fee *Fixed64) (*Transaction, error) {
+func (wallet *WalletImpl) CreateDeployTransaction(fromAddress string, code, parameterTypes []byte, returnType byte, msg map[string]string, fee *Fixed64) (*Transaction, error) {
 	// Sync chain block data before create transaction
 	wallet.SyncChainData()
 	// Check if from address is valid
@@ -345,7 +345,7 @@ func (wallet *WalletImpl) CreateDeployTransaction(fromAddress, toAddress, codeSt
 	}
 	// Create transaction outputs
 	var totalOutputAmount = *fee // The total amount will be spend
-	var txOutputs []*Output            // The outputs in transaction
+	var txOutputs []*Output      // The outputs in transaction
 
 	// Get spender's UTXOs
 	UTXOs, err := wallet.GetAddressUTXOs(spender)
@@ -394,31 +394,26 @@ func (wallet *WalletImpl) CreateDeployTransaction(fromAddress, toAddress, codeSt
 
 	txn := wallet.newTransaction(account.RedeemScript, txInputs, txOutputs, Deploy)
 
-	var code []byte;
-	code, err = HexStringToBytes(codeStr);
-	if err != nil {
-		return nil, errors.New("[Wallet], codeStr is error")
-	}
-
 	fc := contract.FunctionCode{
-		Code: code,
+		Code:           code,
 		ParameterTypes: contract.ByteToContractParameterType(parameterTypes),
 		ReturnType:     contract.ContractParameterType(returnType),
 	}
 
 	txn.Payload = &PayloadDeploy{
-		Code: &fc,
-		Name: "testName",
-		CodeVersion: "1.0",
-		Author: "zxb",
-		Email: "2@2.com",
-		Description: "descript",
-		ProgramHash: *wallet.GetProgramHash(),
+		Code:        &fc,
+		Name:        msg["Name"],
+		CodeVersion: msg["CodeVersion"],
+		Author:      msg["Author"],
+		Email:       msg["Email"],
+		Description: msg["Description"],
+		ProgramHash: *spender,
 	}
+
 	return txn, nil;
 }
 
-func (wallet *WalletImpl) CreateInvokeTransaction(fromAddress, toAddress string, code []byte, codeHash Uint168, fee *Fixed64) (*Transaction, error) {
+func (wallet *WalletImpl) CreateInvokeTransaction(fromAddress string, code []byte, codeHash *Uint168, fee *Fixed64) (*Transaction, error) {
 	// Sync chain block data before create transaction
 	wallet.SyncChainData()
 	// Check if from address is valid
@@ -428,7 +423,7 @@ func (wallet *WalletImpl) CreateInvokeTransaction(fromAddress, toAddress string,
 	}
 	// Create transaction outputs
 	var totalOutputAmount = *fee // The total amount will be spend
-	var txOutputs []*Output            // The outputs in transaction
+	var txOutputs []*Output      // The outputs in transaction
 
 	// Get spender's UTXOs
 	UTXOs, err := wallet.GetAddressUTXOs(spender)
@@ -477,9 +472,9 @@ func (wallet *WalletImpl) CreateInvokeTransaction(fromAddress, toAddress string,
 
 	txn := wallet.newTransaction(account.RedeemScript, txInputs, txOutputs, Invoke)
 	txn.Payload = &PayloadInvoke{
-		Code:code,
-		CodeHash: codeHash,
-		ProgramHash: *wallet.GetProgramHash(),
+		Code:        code,
+		CodeHash:    *codeHash,
+		ProgramHash: *spender,
 	}
 
 	return txn, nil

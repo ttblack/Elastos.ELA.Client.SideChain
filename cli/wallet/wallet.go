@@ -388,6 +388,31 @@ func NewCommand() *cli.Command {
 				Name:  "genesis, g",
 				Usage: "calculate genesis address from genesis block hash",
 			},
+			// smart contract
+			cli.BoolFlag{
+				Name:  "deploy, d",
+				Usage: "deploy smartcontract",
+			},
+			cli.StringFlag{
+				Name: "avm",
+				Usage: "deploy avm file",
+			},
+			cli.BoolFlag{
+				Name:  "invoke, i",
+				Usage: "invoke smartcontract",
+			},
+			cli.StringFlag{
+				Name:  "params",
+				Usage: "invoke contract compiler contract params",
+			},
+			cli.StringFlag{
+				Name: "returntype, r",
+				Usage: "smartContract execute return value type",
+			},
+			cli.StringFlag{
+				Name: "msg",
+				Usage: "deploy message",
+			},
 		},
 		Action: walletAction,
 		OnUsageError: func(c *cli.Context, err error, subCommand bool) error {
