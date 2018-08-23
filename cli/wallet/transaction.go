@@ -207,9 +207,12 @@ func createDeployTransaction(c *cli.Context, wallet walt.Wallet, fee *Fixed64) e
 	}
 
 	params := make([]string, 0)
-	err = json.Unmarshal([]byte(c.String("params")), &params)
-	if err != nil {
-		return errors.New("Invalid format with --params <parameter type json>")
+	paramsStr := c.String("params")
+	if paramsStr != "" {
+		err = json.Unmarshal([]byte(paramsStr), &params)
+		if err != nil {
+			return errors.New("Invalid format with --params <parameter type json>")
+		}
 	}
 
 	paramTypes := []byte{}
@@ -219,10 +222,6 @@ func createDeployTransaction(c *cli.Context, wallet walt.Wallet, fee *Fixed64) e
 		} else {
 			return errors.New(fmt.Sprint("Unsupport parameter type: \"", v, "\""))
 		}
-	}
-
-	if len(paramTypes) == 0 {
-		paramTypes = []byte{contract.Void}
 	}
 
 	returnTypeString := c.String("returntype")
@@ -246,43 +245,45 @@ func createDeployTransaction(c *cli.Context, wallet walt.Wallet, fee *Fixed64) e
 }
 
 func CreateInvokeTransaction(c *cli.Context, wallet walt.Wallet, fee *Fixed64) error {
+	var err error
+	program := []byte{}
 	paramsString := c.String("params")
-	if paramsString == "" {
-		return errors.New("Missing args --params <parameter json>")
-	}
+	if paramsString != "" {
 
-	builder := vm.NewParamsBuider(new(bytes.Buffer))
-	params := make([]map[string]interface{}, 0)
-	err := json.Unmarshal([]byte(c.String("params")), &params)
-	if err != nil {
-		return errors.New("Invalid format with --params <parameter type json>")
-	}
-	for _, v := range params {
-		if len(v) != 1 {
-			return errors.New("Invalid --params <parameter json>")
+		builder := vm.NewParamsBuider(new(bytes.Buffer))
+		params := make([]map[string]interface{}, 0)
+		fmt.Println(paramsString)
+		err = json.Unmarshal([]byte(paramsString), &params)
+		if err != nil {
+			return errors.New("Invalid format with --params <parameter type json>")
 		}
-		for paramType, paramValue := range v {
-			pt := contract.ParameterTypeMap[paramType]
-			switch pt {
-			case contract.Boolean:
-				builder.EmitPushBool(paramValue.(bool))
-			case contract.Integer:
-				value := paramValue.(float64)
-				builder.EmitPushInteger(int64(value))
-			case contract.String:
-				builder.EmitPushByteArray([]byte(paramValue.(string)))
-			case contract.ByteArray, contract.Hash256, contract.Hash160:
-				paramBytes, err := HexStringToBytes(paramValue.(string))
-				if err != nil {
-					return errors.New(fmt.Sprint("Invalid param \"", paramType, "\": ", paramValue))
+		for _, v := range params {
+			if len(v) != 1 {
+				return errors.New("Invalid --params <parameter json>")
+			}
+			for paramType, paramValue := range v {
+				pt := contract.ParameterTypeMap[paramType]
+				switch pt {
+				case contract.Boolean:
+					builder.EmitPushBool(paramValue.(bool))
+				case contract.Integer:
+					value := paramValue.(float64)
+					builder.EmitPushInteger(int64(value))
+				case contract.String:
+					builder.EmitPushByteArray([]byte(paramValue.(string)))
+				case contract.ByteArray, contract.Hash256, contract.Hash160:
+					paramBytes, err := HexStringToBytes(paramValue.(string))
+					if err != nil {
+						return errors.New(fmt.Sprint("Invalid param \"", paramType, "\": ", paramValue))
+					}
+					builder.EmitPushByteArray(paramBytes)
 				}
-				builder.EmitPushByteArray(paramBytes)
 			}
 		}
-	}
-	program := builder.Bytes()
-	if len(program) == 0 {
-		return errors.New("Invalid --params <parameter json>")
+		program = append(program, builder.Bytes()...)
+		if len(program) == 0 {
+			return errors.New("Invalid --params <parameter json>")
+		}
 	}
 
 	codeHashStr := c.String("hex")
