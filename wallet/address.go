@@ -3,15 +3,17 @@ package wallet
 import . "github.com/elastos/Elastos.ELA.Utility/common"
 
 const (
-	TypeMaster = 0
-	TypeStand  = 1 << 1
-	TypeMulti  = 1 << 2
+	TypeMaster   = 0
+	TypeStand    = 1 << 1
+	TypeMulti    = 1 << 2
+	TypeContract = 1 << 3
 )
 
 type Address struct {
 	Address      string
 	ProgramHash  *Uint168
 	RedeemScript []byte
+	Parameter    []byte
 	Type         int
 }
 
@@ -23,6 +25,8 @@ func (addr *Address) TypeName() string {
 		return "STAND"
 	case TypeMulti:
 		return "MULTI"
+	case TypeContract:
+		return "CONTRACT"
 	default:
 		return ""
 	}

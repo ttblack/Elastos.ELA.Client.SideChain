@@ -357,6 +357,10 @@ func signTransaction(name string, password []byte, context *cli.Context, wallet 
 	}
 
 	haveSign, needSign, _ = crypto.GetSignStatus(program.Code, program.Parameter)
+	signType := program.Code[len(program.Code) - 1]
+	if signType == SMARTCONTRACT {
+		haveSign = needSign
+	}
 	fmt.Println("[", haveSign, "/", needSign, "] Transaction successfully signed")
 
 	output(haveSign, needSign, &txn)

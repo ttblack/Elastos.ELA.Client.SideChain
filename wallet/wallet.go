@@ -237,8 +237,12 @@ func (wallet *WalletImpl) createTransaction(fromAddress string, fee *Fixed64, lo
 	if err != nil {
 		return nil, errors.New("[Wallet], Get spenders account info failed")
 	}
-
-	return wallet.newTransaction(account.RedeemScript, txInputs, txOutputs, TransferAsset), nil
+	//PrefixSmartContract
+	tx := wallet.newTransaction(account.RedeemScript, txInputs, txOutputs, TransferAsset)
+	if spender[0] == PrefixSmartContract {
+		tx.Programs[0].Parameter = append(tx.Programs[0].Parameter, account.Parameter...)
+	}
+	return tx, nil
 }
 
 func (wallet *WalletImpl) createCrossChainTransaction(fromAddress string, fee *Fixed64, lockedUntil uint32, outputs ...*CrossChainOutput) (*Transaction, error) {
@@ -505,6 +509,15 @@ func (wallet *WalletImpl) Sign(name string, password []byte, txn *Transaction) (
 		txn, err = wallet.signMultiSignTransaction(txn)
 		if err != nil {
 			return nil, err
+		}
+	} else if signType == SMARTCONTRACT {
+		code := txn.Programs[0].Code
+		param := txn.Programs[0].Parameter
+		if len(code) <= 0 {
+			return nil, errors.New("error smartCode")
+		}
+		if len(param) == 0 {
+			txn.Programs[0].Parameter = append(param, 0)
 		}
 	}
 

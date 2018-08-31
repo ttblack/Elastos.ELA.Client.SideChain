@@ -13,6 +13,7 @@ import (
 	"github.com/elastos/Elastos.ELA.Utility/common"
 	"github.com/urfave/cli"
 	"golang.org/x/crypto/ripemd160"
+	"github.com/elastos/Elastos.ELA.Client.SideChain/contract"
 )
 
 const (
@@ -181,7 +182,7 @@ func walletAction(context *cli.Context) {
 		return
 	}
 
-	wallet, err := wallet.GetWallet()
+	walletImpl, err := wallet.GetWallet()
 	if err != nil {
 		fmt.Println("error: open wallet failed, ", err)
 		os.Exit(2)
@@ -196,9 +197,34 @@ func walletAction(context *cli.Context) {
 		return
 	}
 
+	// createContractAddress
+	if params := context.String("contract"); params != "" {
+		switch params {
+		case "create":
+			contract, err := contract.CreateContractAddress(context)
+			if err != nil {
+				fmt.Println("error:", err)
+				os.Exit(701)
+			}
+			err = walletImpl.AddContractAddress(*contract)
+			if err != nil {
+				fmt.Println("error:", err)
+				os.Exit(701)
+			}
+			addrs, err := walletImpl.GetAddresses()
+			if err != nil || len(addrs) == 0 {
+				fmt.Println("error:", err)
+				return
+			}
+
+			ShowAccounts(addrs, &contract.ProgramHash, walletImpl)
+			return
+		}
+	}
+
 	// change password
 	if context.Bool("changepassword") {
-		if err := changePassword(name, []byte(pass), wallet); err != nil {
+		if err := changePassword(name, []byte(pass), walletImpl); err != nil {
 			fmt.Println("error: change password failed,", err)
 			cli.ShowCommandHelpAndExit(context, "changepassword", 4)
 		}
@@ -207,7 +233,7 @@ func walletAction(context *cli.Context) {
 
 	// add an account
 	if input := context.String("addaccount"); input != "" {
-		if err := addAccount(context, wallet, input); err != nil {
+		if err := addAccount(context, walletImpl, input); err != nil {
 			fmt.Println("error: add standard account failed,", err)
 			cli.ShowCommandHelpAndExit(context, "addaccount", 5)
 		}
@@ -216,7 +242,7 @@ func walletAction(context *cli.Context) {
 
 	// delete account
 	if address := context.String("delaccount"); address != "" {
-		if err := deleteAccount(wallet, address); err != nil {
+		if err := deleteAccount(walletImpl, address); err != nil {
 			fmt.Println("error: delete account failed,", err)
 			cli.ShowCommandHelpAndExit(context, "delaccount", 5)
 		}
@@ -225,7 +251,7 @@ func walletAction(context *cli.Context) {
 
 	// list accounts information
 	if context.Bool("list") {
-		if err := listBalanceInfo(wallet); err != nil {
+		if err := listBalanceInfo(walletImpl); err != nil {
 			fmt.Println("error: list accounts information failed,", err)
 			cli.ShowCommandHelpAndExit(context, "list", 6)
 		}
@@ -236,12 +262,12 @@ func walletAction(context *cli.Context) {
 	if param := context.String("transaction"); param != "" {
 		switch param {
 		case "create":
-			if err := createTransaction(context, wallet); err != nil {
+			if err := createTransaction(context, walletImpl); err != nil {
 				fmt.Println("error:", err)
 				os.Exit(701)
 			}
 		case "sign":
-			if err := signTransaction(name, []byte(pass), context, wallet); err != nil {
+			if err := signTransaction(name, []byte(pass), context, walletImpl); err != nil {
 				fmt.Println("error:", err)
 				os.Exit(702)
 			}
@@ -258,7 +284,7 @@ func walletAction(context *cli.Context) {
 
 	// reset wallet
 	if context.Bool("reset") {
-		if err := wallet.Reset(); err != nil {
+		if err := walletImpl.Reset(); err != nil {
 			fmt.Println("error: reset wallet data store failed,", err)
 			cli.ShowCommandHelpAndExit(context, "reset", 8)
 		}
@@ -394,7 +420,7 @@ func NewCommand() *cli.Command {
 				Usage: "deploy smartcontract",
 			},
 			cli.StringFlag{
-				Name: "avm",
+				Name:  "avm",
 				Usage: "deploy avm file",
 			},
 			cli.BoolFlag{
@@ -406,12 +432,16 @@ func NewCommand() *cli.Command {
 				Usage: "invoke contract compiler contract params",
 			},
 			cli.StringFlag{
-				Name: "returntype, r",
+				Name:  "returntype, r",
 				Usage: "smartContract execute return value type",
 			},
 			cli.StringFlag{
-				Name: "msg",
+				Name:  "msg",
 				Usage: "deploy message",
+			},
+			cli.StringFlag{
+				Name:  "contract",
+				Usage: "create smartContract address",
 			},
 		},
 		Action: walletAction,

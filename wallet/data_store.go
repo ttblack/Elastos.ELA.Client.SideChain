@@ -12,6 +12,7 @@ import (
 	. "github.com/elastos/Elastos.ELA.Utility/common"
 	. "github.com/elastos/Elastos.ELA.SideChain/core"
 	_ "github.com/mattn/go-sqlite3"
+	"github.com/elastos/Elastos.ELA.SideChain/contract"
 )
 
 const (
@@ -30,6 +31,7 @@ const (
 				Id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
 				ProgramHash BLOB UNIQUE NOT NULL,
 				RedeemScript BLOB UNIQUE NOT NULL,
+				Parameter	 BLOB NOT NULL,
 				Type INTEGER NOT NULL
 			);`
 	CreateUTXOsTable = `CREATE TABLE IF NOT EXISTS UTXOs (
@@ -54,6 +56,7 @@ type DataStore interface {
 	CurrentHeight(height uint32) uint32
 
 	AddAddress(programHash *Uint168, redeemScript []byte, addrType int) error
+	AddContractAddress(contract contract.Contract) error
 	DeleteAddress(programHash *Uint168) error
 	GetAddressInfo(programHash *Uint168) (*Address, error)
 	GetAddresses() ([]*Address, error)
@@ -163,8 +166,21 @@ func (store *DataStoreImpl) AddAddress(programHash *Uint168, redeemScript []byte
 	store.Lock()
 	defer store.Unlock()
 
-	sql := "INSERT INTO Addresses(ProgramHash, RedeemScript, Type) values(?,?,?)"
-	_, err := store.Exec(sql, programHash.Bytes(), redeemScript, addrType)
+	sql := "INSERT INTO Addresses(ProgramHash, RedeemScript, Parameter, Type) values(?,?,?,?)"
+	_, err := store.Exec(sql, programHash.Bytes(), redeemScript, []byte{0}, addrType)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (store *DataStoreImpl) AddContractAddress(ct contract.Contract) error {
+	store.Lock()
+	defer store.Unlock()
+	parameter := contract.ContractParameterTypeToByte(ct.Parameters)
+
+	sql := "INSERT INTO Addresses(ProgramHash, RedeemScript, Parameter, Type) values(?,?,?,?)"
+	_, err := store.Exec(sql, ct.ProgramHash.Bytes(), ct.Code, parameter, TypeContract)
 	if err != nil {
 		return err
 	}
@@ -202,10 +218,11 @@ func (store *DataStoreImpl) GetAddressInfo(programHash *Uint168) (*Address, erro
 	defer store.Unlock()
 
 	// Query address info by it's ProgramHash
-	row := store.QueryRow(`SELECT RedeemScript, Type FROM Addresses WHERE ProgramHash=?`, programHash.Bytes())
+	row := store.QueryRow(`SELECT RedeemScript, parameter, Type FROM Addresses WHERE ProgramHash=?`, programHash.Bytes())
 	var redeemScript []byte
+	var parameter []byte
 	var addrType int
-	err := row.Scan(&redeemScript, &addrType)
+	err := row.Scan(&redeemScript, &parameter, &addrType)
 	if err != nil {
 		return nil, err
 	}
@@ -213,14 +230,14 @@ func (store *DataStoreImpl) GetAddressInfo(programHash *Uint168) (*Address, erro
 	if err != nil {
 		return nil, err
 	}
-	return &Address{address, programHash, redeemScript, addrType}, nil
+	return &Address{address, programHash, redeemScript, parameter, addrType}, nil
 }
 
 func (store *DataStoreImpl) GetAddresses() ([]*Address, error) {
 	store.Lock()
 	defer store.Unlock()
 
-	rows, err := store.Query("SELECT ProgramHash, RedeemScript, Type FROM Addresses")
+	rows, err := store.Query("SELECT ProgramHash, RedeemScript, Parameter, Type FROM Addresses")
 	if err != nil {
 		log.Error("Get address query error:", err)
 		return nil, err
@@ -232,7 +249,8 @@ func (store *DataStoreImpl) GetAddresses() ([]*Address, error) {
 		var programHashBytes []byte
 		var redeemScript []byte
 		var addrType int
-		err = rows.Scan(&programHashBytes, &redeemScript, &addrType)
+		var parameter []byte
+		err = rows.Scan(&programHashBytes, &redeemScript, &parameter, &addrType)
 		if err != nil {
 			log.Error("Get address scan row:", err)
 			return nil, err
@@ -245,7 +263,7 @@ func (store *DataStoreImpl) GetAddresses() ([]*Address, error) {
 		if err != nil {
 			return nil, err
 		}
-		addresses = append(addresses, &Address{address, programHash, redeemScript, addrType})
+		addresses = append(addresses, &Address{address, programHash, redeemScript, parameter, addrType})
 	}
 	return addresses, nil
 }
