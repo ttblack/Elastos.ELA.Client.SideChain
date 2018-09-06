@@ -239,7 +239,21 @@ func createDeployTransaction(c *cli.Context, wallet walt.Wallet, fee *Fixed64) e
 		}
 	}
 
+	code = append(code, SMARTCONTRACT)
 	txn, err := wallet.CreateDeployTransaction(from, code, paramTypes, byte(returnType), message, fee)
+
+	// this code is generate a contractAddress when deployTransaction
+	programHash, err := crypto.ToProgramHash(code)
+
+	contract := &contract.Contract{
+		Code:        code,
+		Parameters:  contract.ByteToContractParameterType(paramTypes),
+		ProgramHash: *programHash,
+	}
+	wallet.AddContractAddress(*contract)
+	addrs, err := wallet.GetAddresses()
+
+	ShowAccounts(addrs, &contract.ProgramHash, wallet)
 
 	return output(0, 0, txn);
 }
@@ -313,7 +327,18 @@ func CreateInvokeTransaction(c *cli.Context, wallet walt.Wallet, fee *Fixed64) e
 		}
 	}
 
-	txn, err := wallet.CreateInvokeTransaction(from, program, codeHash, fee)
+	amountStr := c.String("amount")
+	if amountStr == "" {
+		return errors.New("use --amount to specify transfer amount")
+	}
+	amount, err := StringToFixed64(amountStr)
+	if err != nil {
+		return errors.New("invalid transaction amount")
+	}
+
+	to := c.String("to")
+
+	txn, err := wallet.CreateInvokeTransaction(from, to, amount, program, codeHash, fee)
 	if err != nil {
 		return errors.New("Create invoke tx error")
 	}

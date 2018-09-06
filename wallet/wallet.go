@@ -50,7 +50,7 @@ type Wallet interface {
 	CreateLockedMultiOutputTransaction(fromAddress string, fee *Fixed64, lockedUntil uint32, output ...*Transfer) (*Transaction, error)
 	CreateCrossChainTransaction(fromAddress, toAddress, crossChainAddress string, amount, fee *Fixed64) (*Transaction, error)
 	CreateDeployTransaction(fromAddress string, code, ParameterTypes []byte, ReturnType byte, msg map[string]string, fee *Fixed64) (*Transaction, error)
-	CreateInvokeTransaction(fromAddress string, code []byte, codeHash *Uint168, fee *Fixed64) (*Transaction, error)
+	CreateInvokeTransaction(fromAddress, toAddress string, amount *Fixed64, code []byte, codeHash *Uint168, fee *Fixed64) (*Transaction, error)
 
 	Sign(name string, password []byte, transaction *Transaction) (*Transaction, error)
 
@@ -417,7 +417,7 @@ func (wallet *WalletImpl) CreateDeployTransaction(fromAddress string, code, para
 	return txn, nil;
 }
 
-func (wallet *WalletImpl) CreateInvokeTransaction(fromAddress string, code []byte, codeHash *Uint168, fee *Fixed64) (*Transaction, error) {
+func (wallet *WalletImpl) CreateInvokeTransaction(fromAddress, toAddress string, amount *Fixed64, code []byte, codeHash *Uint168, fee *Fixed64) (*Transaction, error) {
 	// Sync chain block data before create transaction
 	wallet.SyncChainData()
 	// Check if from address is valid
@@ -436,6 +436,20 @@ func (wallet *WalletImpl) CreateInvokeTransaction(fromAddress string, code []byt
 	}
 	availableUTXOs := wallet.removeLockedUTXOs(UTXOs) // Remove locked UTXOs
 	availableUTXOs = SortUTXOs(availableUTXOs)        // Sort available UTXOs by value ASC
+
+
+	receiver, err := Uint168FromAddress(toAddress)
+	if err != nil {
+		return nil, errors.New(fmt.Sprint("[Wallet], Invalid receiver address: ", toAddress, ", error: ", err))
+	}
+	txOutput := &Output{
+		AssetID:     SystemAssetId,
+		ProgramHash: *receiver,
+		Value:       *amount,
+		OutputLock:  uint32(0),
+	}
+	totalOutputAmount += txOutput.Value
+	txOutputs = append(txOutputs, txOutput)
 
 	// Create transaction inputs
 	var txInputs []*Input // The inputs in transaction
