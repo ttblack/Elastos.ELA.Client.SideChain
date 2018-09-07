@@ -101,8 +101,8 @@ func SelectAccount(wallet walt.Wallet) (string, error) {
 
 func ShowAccounts(addrs []*walt.Address, newAddr *Uint168, wallet walt.Wallet) error {
 	// print header
-	fmt.Printf("%5s %34s %-20s%22s %6s\n", "INDEX", "ADDRESS", "BALANCE", "(LOCKED)", "TYPE")
-	fmt.Println("-----", strings.Repeat("-", 34), strings.Repeat("-", 42), "------")
+	fmt.Printf("%5s %34s %-20s %20s %29s %3s\n", "INDEX", "ADDRESS", "BALANCE", "PROGRAMHASH", "(LOCKED)", "TYPE")
+	fmt.Println("-----", strings.Repeat("-", 34), strings.Repeat("-", 42 + 20), "--------", "-------")
 
 	currentHeight := wallet.CurrentHeight(walt.QueryHeightCode)
 	for i, addr := range addrs {
@@ -119,13 +119,13 @@ func ShowAccounts(addrs []*walt.Address, newAddr *Uint168, wallet walt.Wallet) e
 				locked += *utxo.Amount
 			}
 		}
-		var format = "%5d %34s %-20s%22s %6s\n"
+		var format = "%5d %34s %-20s %40s %1s %10s\n"
 		if newAddr != nil && newAddr.IsEqual(*addr.ProgramHash) {
 			format = "\033[0;32m" + format + "\033[m"
 		}
 
-		fmt.Printf(format, i+1, addr.Address, available.String(), "("+locked.String()+")", addr.TypeName())
-		fmt.Println("-----", strings.Repeat("-", 34), strings.Repeat("-", 42), "------")
+		fmt.Printf(format, i+1, addr.Address, available.String(), addr.ProgramHash.String(), "("+locked.String()+")", addr.TypeName())
+		fmt.Println("-----", strings.Repeat("-", 34), strings.Repeat("-", 42 + 20), "--------", "-------")
 	}
 
 	return nil
