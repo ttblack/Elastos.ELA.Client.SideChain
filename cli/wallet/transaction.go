@@ -11,6 +11,8 @@ import (
 	"encoding/json"
 	"io/ioutil"
 
+	"github.com/urfave/cli"
+
 	"github.com/elastos/Elastos.ELA.Client.SideChain/config"
 	"github.com/elastos/Elastos.ELA.Client.SideChain/log"
 	"github.com/elastos/Elastos.ELA.Client.SideChain/rpc"
@@ -20,7 +22,6 @@ import (
 	"github.com/elastos/Elastos.ELA.SideChain/vm"
 	"github.com/elastos/Elastos.ELA.Utility/crypto"
 	. "github.com/elastos/Elastos.ELA.Utility/common"
-	"github.com/urfave/cli"
 )
 
 func createSmartContractTransaction(c *cli.Context, wallet walt.Wallet, fee *Fixed64) error {
@@ -185,7 +186,6 @@ func createDeployTransaction(c *cli.Context, wallet walt.Wallet, fee *Fixed64) e
 	}
 
 	code := []byte{}
-
 	codeString := c.String("hex")
 	avm := c.String("avm")
 	if codeString != "" {
@@ -310,11 +310,14 @@ func CreateInvokeTransaction(c *cli.Context, wallet walt.Wallet, fee *Fixed64) e
 	amount, err := StringToFixed64(amountStr)
 	if err != nil {
 		return errors.New("invalid transaction amount")
-	}
+}
 
 	to := c.String("to")
-
-	txn, err := wallet.CreateInvokeTransaction(from, to, amount, program, codeHash, fee)
+	gas, err := GetContractGas()
+	if err != nil {
+		return err
+	}
+	txn, err := wallet.CreateInvokeTransaction(from, to, amount, program, codeHash, fee, gas)
 	if err != nil {
 		return errors.New("Create invoke tx error")
 	}
@@ -372,6 +375,24 @@ func paraseJsonToBytes(data string, builder *vm.ParamsBuilder) error {
 		}
 	}
 	return nil
+}
+
+func GetContractGas() (*Fixed64, error) {
+
+	inputReader := bufio.NewReader(os.Stdin)
+	fmt.Println("Please input gas:")
+	str, err := inputReader.ReadString('\n')
+	if err != nil {
+		log.Info("the input was :%s", str)
+		value := Fixed64(0)
+		return &value, err
+	}
+	str = strings.Trim(str, "\n")
+	gas, err := StringToFixed64(str)
+	if err != nil {
+		fmt.Println("input is not a number:", err)
+	}
+	return gas, nil
 }
 
 func signTransaction(name string, password []byte, context *cli.Context, wallet walt.Wallet) error {
