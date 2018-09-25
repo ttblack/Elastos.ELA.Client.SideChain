@@ -345,7 +345,7 @@ func paraseJsonToBytes(data string, builder *vm.ParamsBuilder) error {
 				builder.EmitPushInteger(int64(value))
 			case contract.String:
 				builder.EmitPushByteArray([]byte(paramValue.(string)))
-			case contract.ByteArray, contract.Hash256:
+			case contract.ByteArray, contract.Hash256, contract.Hash168:
 				paramBytes, err := HexStringToBytes(paramValue.(string))
 				if err != nil {
 					return errors.New(fmt.Sprint("Invalid param \"", paramType, "\": ", paramValue))
