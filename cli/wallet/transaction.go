@@ -310,7 +310,7 @@ func CreateInvokeTransaction(c *cli.Context, wallet walt.Wallet, fee *Fixed64) e
 	amount, err := StringToFixed64(amountStr)
 	if err != nil {
 		return errors.New("invalid transaction amount")
-}
+	}
 
 	to := c.String("to")
 	gas, err := GetContractGas()
@@ -331,7 +331,8 @@ func paraseJsonToBytes(data string, builder *vm.ParamsBuilder) error {
 	if err != nil {
 		return err
 	}
-	for _, v := range params {
+	for i := len(params) - 1; i >= 0; i-- {
+	  	v := params[i]
 		if len(v) != 1 {
 			return errors.New("Invalid --params <parameter json>")
 		}
