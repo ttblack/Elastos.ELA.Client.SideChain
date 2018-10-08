@@ -276,23 +276,30 @@ func CreateInvokeTransaction(c *cli.Context, wallet walt.Wallet, fee *Fixed64) e
 		}
 	}
 
-	codeHashStr := c.String("hex")
-	if codeHashStr == "" {
-		return errors.New("Missing args --hex <code hash>")
-	}
-
+	codeHash := &Uint168{}
 	var codeHashBytes []byte
-	codeHashBytes, err = HexStringToBytes(codeHashStr)
-	if err != nil {
-		return errors.New("convert code error")
-	}
+	codeHashStr := c.String("hex")
+	avm := c.String("avm")
+	if codeHashStr != "" {
+		codeHashBytes, err = HexStringToBytes(codeHashStr)
+		if err != nil {
+			return err
+		}
+		codeHash, err = Uint168FromBytes(codeHashBytes)
+		if err != nil {
+			return err
+		}
 
-	program = append(program, vm.TAILCALL)
-	program = append(program, codeHashBytes...)
-
-	codeHash, err := Uint168FromBytes(codeHashBytes)
-	if err != nil {
-		return err
+		program = append(program, vm.TAILCALL)
+		program = append(program, codeHashBytes...)
+	} else if avm != "" {
+		code, err := ioutil.ReadFile(avm)
+		if err != nil {
+			return err
+		}
+		program = append(program, code...)
+	} else {
+		return errors.New("Create invoke tx should with --hex <code hex> or --avm <avm file>")
 	}
 
 	from := c.String("from")
