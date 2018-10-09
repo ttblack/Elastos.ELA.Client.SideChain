@@ -286,11 +286,12 @@ func CreateInvokeTransaction(c *cli.Context, wallet walt.Wallet, fee *Fixed64) e
 			return err
 		}
 		codeHash, err = Uint168FromBytes(codeHashBytes)
-		if err != nil {
-			return err
+		if err == nil {
+			program = append(program, vm.TAILCALL)
+		} else {
+			codeHash = &Uint168{}
 		}
 
-		program = append(program, vm.TAILCALL)
 		program = append(program, codeHashBytes...)
 	} else if avm != "" {
 		code, err := ioutil.ReadFile(avm)
