@@ -23,7 +23,7 @@ func CreateContractAddress(context *cli.Context) (*contract.Contract, error)  {
 	if err != nil {
 		return nil, err
 	}
-	code = append(code, common.SMARTCONTRACT)
+	//code = append(code, common.SMARTCONTRACT)
 	programHash, err := crypto.ToProgramHash(code)
 
 	contract := &contract.Contract{

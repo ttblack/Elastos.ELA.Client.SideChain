@@ -348,7 +348,7 @@ func (wallet *WalletImpl) CreateDeployTransaction(fromAddress string, code, para
 		return nil, errors.New(fmt.Sprint("[Wallet], Invalid spender address: ", fromAddress, ", error: ", err))
 	}
 	// Create transaction outputs
-	gas := Fixed64(500 * 100000000)
+	gas := Fixed64(490 * 100000000)
 	var totalOutputAmount = *fee + gas // The total amount will be spend
 	var txOutputs []*Output      // The outputs in transaction
 

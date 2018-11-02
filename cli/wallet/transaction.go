@@ -22,6 +22,7 @@ import (
 	"github.com/elastos/Elastos.ELA.SideChain/vm"
 	"github.com/elastos/Elastos.ELA.Utility/crypto"
 	. "github.com/elastos/Elastos.ELA.Utility/common"
+	"github.com/elastos/Elastos.ELA.SideChain/common"
 )
 
 func createSmartContractTransaction(c *cli.Context, wallet walt.Wallet, fee *Fixed64) error {
@@ -239,7 +240,7 @@ func createDeployTransaction(c *cli.Context, wallet walt.Wallet, fee *Fixed64) e
 		}
 	}
 
-	code = append(code, SMARTCONTRACT)
+	//code = append(code, SMARTCONTRACT)
 	txn, err := wallet.CreateDeployTransaction(from, code, paramTypes, byte(returnType), message, fee)
 
 	// this code is generate a contractAddress when deployTransaction
@@ -265,7 +266,6 @@ func CreateInvokeTransaction(c *cli.Context, wallet walt.Wallet, fee *Fixed64) e
 	buffer := new(bytes.Buffer)
 	builder := vm.NewParamsBuider(buffer)
 	if paramsString != "" {
-		fmt.Println(paramsString)
 		err := paraseJsonToBytes(paramsString, builder)
 		if err != nil {
 			return err
@@ -291,7 +291,7 @@ func CreateInvokeTransaction(c *cli.Context, wallet walt.Wallet, fee *Fixed64) e
 		} else {
 			codeHash = &Uint168{}
 		}
-
+		codeHashBytes = common.UInt168ToUInt160(codeHash)
 		program = append(program, codeHashBytes...)
 	} else if avm != "" {
 		code, err := ioutil.ReadFile(avm)
