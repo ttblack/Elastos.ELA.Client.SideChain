@@ -386,6 +386,10 @@ func NewCommand() *cli.Command {
 				Usage: "the transfer fee of the transaction",
 			},
 			cli.StringFlag{
+				Name:  "gas",
+				Usage: "the contract script execution cost",
+			},
+			cli.StringFlag{
 				Name:  "lock",
 				Usage: "the lock time to specify when the received asset can be spent",
 			},

@@ -239,9 +239,18 @@ func createDeployTransaction(c *cli.Context, wallet walt.Wallet, fee *Fixed64) e
 			return errors.New("Invalid args --msg <message json>")
 		}
 	}
+	gasStr := c.String("gas")
+	gas, err := StringToFixed64(gasStr)
+	if err != nil {
+		return err
+	}
+	if gasStr == "" {
+		//deploy is need 490 ela
+		value := Fixed64(490 * 100000000)
+		gas = &value
+	}
 
-	//code = append(code, SMARTCONTRACT)
-	txn, err := wallet.CreateDeployTransaction(from, code, paramTypes, byte(returnType), message, fee)
+	txn, err := wallet.CreateDeployTransaction(from, code, paramTypes, byte(returnType), message, fee, gas)
 
 	// this code is generate a contractAddress when deployTransaction
 	programHash, err := crypto.ToProgramHash(code)
@@ -321,7 +330,9 @@ func CreateInvokeTransaction(c *cli.Context, wallet walt.Wallet, fee *Fixed64) e
 	}
 
 	to := c.String("to")
-	gas, err := GetContractGas()
+
+	gasStr := c.String("gas")
+	gas, err := StringToFixed64(gasStr)
 	if err != nil {
 		return err
 	}
@@ -384,24 +395,6 @@ func paraseJsonToBytes(data string, builder *vm.ParamsBuilder) error {
 		}
 	}
 	return nil
-}
-
-func GetContractGas() (*Fixed64, error) {
-
-	inputReader := bufio.NewReader(os.Stdin)
-	fmt.Println("Please input gas:")
-	str, err := inputReader.ReadString('\n')
-	if err != nil {
-		log.Info("the input was :%s", str)
-		value := Fixed64(0)
-		return &value, err
-	}
-	str = strings.Trim(str, "\n")
-	gas, err := StringToFixed64(str)
-	if err != nil {
-		fmt.Println("input is not a number:", err)
-	}
-	return gas, nil
 }
 
 func signTransaction(name string, password []byte, context *cli.Context, wallet walt.Wallet) error {

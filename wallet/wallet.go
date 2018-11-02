@@ -49,7 +49,7 @@ type Wallet interface {
 	CreateMultiOutputTransaction(fromAddress string, fee *Fixed64, output ...*Transfer) (*Transaction, error)
 	CreateLockedMultiOutputTransaction(fromAddress string, fee *Fixed64, lockedUntil uint32, output ...*Transfer) (*Transaction, error)
 	CreateCrossChainTransaction(fromAddress, toAddress, crossChainAddress string, amount, fee *Fixed64) (*Transaction, error)
-	CreateDeployTransaction(fromAddress string, code, ParameterTypes []byte, ReturnType byte, msg map[string]string, fee *Fixed64) (*Transaction, error)
+	CreateDeployTransaction(fromAddress string, code, ParameterTypes []byte, ReturnType byte, msg map[string]string, fee *Fixed64, gas *Fixed64) (*Transaction, error)
 	CreateInvokeTransaction(fromAddress, toAddress string, amount *Fixed64, code []byte, codeHash *Uint168, fee *Fixed64, gas *Fixed64) (*Transaction, error)
 
 	Sign(name string, password []byte, transaction *Transaction) (*Transaction, error)
@@ -339,7 +339,7 @@ func (wallet *WalletImpl) createCrossChainTransaction(fromAddress string, fee *F
 	return txn, nil
 }
 
-func (wallet *WalletImpl) CreateDeployTransaction(fromAddress string, code, parameterTypes []byte, returnType byte, msg map[string]string, fee *Fixed64) (*Transaction, error) {
+func (wallet *WalletImpl) CreateDeployTransaction(fromAddress string, code, parameterTypes []byte, returnType byte, msg map[string]string, fee *Fixed64, gas *Fixed64) (*Transaction, error) {
 	// Sync chain block data before create transaction
 	wallet.SyncChainData()
 	// Check if from address is valid
@@ -348,8 +348,7 @@ func (wallet *WalletImpl) CreateDeployTransaction(fromAddress string, code, para
 		return nil, errors.New(fmt.Sprint("[Wallet], Invalid spender address: ", fromAddress, ", error: ", err))
 	}
 	// Create transaction outputs
-	gas := Fixed64(490 * 100000000)
-	var totalOutputAmount = *fee + gas // The total amount will be spend
+	var totalOutputAmount = *fee + *gas // The total amount will be spend
 	var txOutputs []*Output      // The outputs in transaction
 
 	// Get spender's UTXOs
@@ -413,7 +412,7 @@ func (wallet *WalletImpl) CreateDeployTransaction(fromAddress string, code, para
 		Email:       msg["Email"],
 		Description: msg["Description"],
 		ProgramHash: *spender,
-		Gas:         gas,
+		Gas:         *gas,
 	}
 
 	return txn, nil;
