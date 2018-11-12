@@ -104,7 +104,15 @@ func createTransaction(c *cli.Context, wallet walt.Wallet) error {
 		to = standard
 		lockStr := c.String("lock")
 		if lockStr == "" {
-			txn, err = wallet.CreateTransaction(from, to, amount, fee)
+			spender, err := Uint168FromAddress(from)
+			if err != nil {
+				return errors.New("create transaction failed: " + err.Error())
+			}
+			if spender[0] == PrefixSmartContract {
+				txn, err = createVerificationTransaction(c, wallet, from, to, amount, fee)
+			} else {
+				txn, err = wallet.CreateTransaction(from, to, amount, fee)
+			}
 			if err != nil {
 				return errors.New("create transaction failed: " + err.Error())
 			}
@@ -125,6 +133,26 @@ func createTransaction(c *cli.Context, wallet walt.Wallet) error {
 	output(0, 0, txn)
 
 	return nil
+}
+
+func createVerificationTransaction(c *cli.Context, wallet walt.Wallet, from, to string, amount, fee *Fixed64) (*Transaction, error) {
+
+	program := []byte{}
+	paramsString := c.String("params")
+	buffer := new(bytes.Buffer)
+	builder := vm.NewParamsBuider(buffer)
+	if paramsString != "" {
+		err := parseJsonToBytes(paramsString, builder)
+		if err != nil {
+			return nil, err
+		}
+		program = append(program, builder.Bytes()...)
+		if len(program) == 0 {
+			return nil, errors.New("Invalid --params <parameter json>")
+		}
+	}
+
+	return wallet.CreateTransactionFromContract(from, to, amount, fee, program)
 }
 
 func createMultiOutputTransaction(c *cli.Context, wallet walt.Wallet, path, from string, fee *Fixed64) error {
@@ -250,16 +278,17 @@ func createDeployTransaction(c *cli.Context, wallet walt.Wallet, fee *Fixed64) e
 		gas = &value
 	}
 
+	if code[len(code) - 1] != SMARTCONTRACT {
+		code = append(code, SMARTCONTRACT)
+	}
 	txn, err := wallet.CreateDeployTransaction(from, code, paramTypes, byte(returnType), message, fee, gas)
-
-	// this code is generate a contractAddress when deployTransaction
 	programHash, err := crypto.ToProgramHash(code)
-
 	contract := &contract.Contract{
 		Code:        code,
 		Parameters:  contract.ByteToContractParameterType(paramTypes),
 		ProgramHash: *programHash,
 	}
+	// this code is generate a contractAddress when deployTransaction
 	wallet.AddContractAddress(*contract)
 	addrs, err := wallet.GetAddresses()
 
@@ -275,7 +304,7 @@ func CreateInvokeTransaction(c *cli.Context, wallet walt.Wallet, fee *Fixed64) e
 	buffer := new(bytes.Buffer)
 	builder := vm.NewParamsBuider(buffer)
 	if paramsString != "" {
-		err := paraseJsonToBytes(paramsString, builder)
+		err := parseJsonToBytes(paramsString, builder)
 		if err != nil {
 			return err
 		}
@@ -338,13 +367,13 @@ func CreateInvokeTransaction(c *cli.Context, wallet walt.Wallet, fee *Fixed64) e
 	}
 	txn, err := wallet.CreateInvokeTransaction(from, to, amount, program, codeHash, fee, gas)
 	if err != nil {
-		return errors.New("Create invoke tx error")
+		return err
 	}
 
 	return output(0, 0, txn);
 }
 
-func paraseJsonToBytes(data string, builder *vm.ParamsBuilder) error {
+func parseJsonToBytes(data string, builder *vm.ParamsBuilder) error {
 	params := make([]map[string]interface{}, 0)
 	err := json.Unmarshal([]byte(data), &params)
 	if err != nil {
@@ -385,7 +414,7 @@ func paraseJsonToBytes(data string, builder *vm.ParamsBuilder) error {
 			case contract.Array:
 				mjson,_ :=json.Marshal(paramValue)
 				count := len(paramValue.([]interface{}))
-				err := paraseJsonToBytes(string(mjson), builder)
+				err := parseJsonToBytes(string(mjson), builder)
 				if err != nil {
 					return err
 				}
@@ -435,7 +464,7 @@ func signTransaction(name string, password []byte, context *cli.Context, wallet 
 	haveSign, needSign, _ = crypto.GetSignStatus(program.Code, program.Parameter)
 	signType := program.Code[len(program.Code) - 1]
 	if signType == SMARTCONTRACT {
-		haveSign = needSign
+		needSign = haveSign
 	}
 	fmt.Println("[", haveSign, "/", needSign, "] Transaction successfully signed")
 

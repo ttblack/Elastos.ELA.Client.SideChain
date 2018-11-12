@@ -51,6 +51,7 @@ type Wallet interface {
 	CreateCrossChainTransaction(fromAddress, toAddress, crossChainAddress string, amount, fee *Fixed64) (*Transaction, error)
 	CreateDeployTransaction(fromAddress string, code, ParameterTypes []byte, ReturnType byte, msg map[string]string, fee *Fixed64, gas *Fixed64) (*Transaction, error)
 	CreateInvokeTransaction(fromAddress, toAddress string, amount *Fixed64, code []byte, codeHash *Uint168, fee *Fixed64, gas *Fixed64) (*Transaction, error)
+	CreateTransactionFromContract(fromAddress, toAddress string, amount, fee *Fixed64, params []byte) (*Transaction, error)
 
 	Sign(name string, password []byte, transaction *Transaction) (*Transaction, error)
 
@@ -161,6 +162,19 @@ func (wallet *WalletImpl) CreateCrossChainTransaction(fromAddress, toAddress, cr
 	return wallet.createCrossChainTransaction(fromAddress, fee, uint32(0), &CrossChainOutput{toAddress, amount, crossChainAddress})
 }
 
+func (wallet *WalletImpl)CreateTransactionFromContract(fromAddress, toAddress string, amount, fee *Fixed64, params []byte) (*Transaction, error) {
+
+	txn, err := wallet.createTransaction(fromAddress, fee, uint32(0), &Transfer{toAddress, amount})
+	if err != nil {
+		return nil, err
+	}
+	if len(txn.Programs) <= 0 {
+		return nil, errors.New("error contract transaction")
+	}
+	txn.Programs[0].Parameter = append(txn.Programs[0].Parameter, params...)
+	return txn, nil
+}
+
 func (wallet *WalletImpl) createTransaction(fromAddress string, fee *Fixed64, lockedUntil uint32, outputs ...*Transfer) (*Transaction, error) {
 	// Check if output is valid
 	if len(outputs) == 0 {
@@ -237,11 +251,8 @@ func (wallet *WalletImpl) createTransaction(fromAddress string, fee *Fixed64, lo
 	if err != nil {
 		return nil, errors.New("[Wallet], Get spenders account info failed")
 	}
-	//PrefixSmartContract
 	tx := wallet.newTransaction(account.RedeemScript, txInputs, txOutputs, TransferAsset)
-	if spender[0] == PrefixSmartContract {
-		tx.Programs[0].Parameter = append(tx.Programs[0].Parameter, account.Parameter...)
-	}
+
 	return tx, nil
 }
 
@@ -499,6 +510,7 @@ func (wallet *WalletImpl) CreateInvokeTransaction(fromAddress, toAddress string,
 
 	return txn, nil
 }
+
 func (wallet *WalletImpl) Sign(name string, password []byte, txn *Transaction) (*Transaction, error) {
 	// Verify password
 	err := wallet.Open(name, password)
