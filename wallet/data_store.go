@@ -7,12 +7,15 @@ import (
 	"os"
 	"sync"
 
-	"github.com/elastos/Elastos.ELA.Client.SideChain/log"
+	_ "github.com/mattn/go-sqlite3"
 
 	. "github.com/elastos/Elastos.ELA.Utility/common"
-	. "github.com/elastos/Elastos.ELA.SideChain/core"
-	_ "github.com/mattn/go-sqlite3"
-	"github.com/elastos/Elastos.ELA.SideChain/contract"
+
+	"github.com/elastos/Elastos.ELA.SideChain.NeoVM/contract"
+
+	"github.com/elastos/Elastos.ELA.SideChain/types"
+
+	"github.com/elastos/Elastos.ELA.Client.SideChain/log"
 )
 
 const (
@@ -44,7 +47,7 @@ const (
 )
 
 type UTXO struct {
-	Op       *OutPoint
+	Op       *types.OutPoint
 	Amount   *Fixed64
 	LockTime uint32
 }
@@ -62,7 +65,7 @@ type DataStore interface {
 	GetAddresses() ([]*Address, error)
 
 	AddAddressUTXO(programHash *Uint168, utxo *UTXO) error
-	DeleteUTXO(input *OutPoint) error
+	DeleteUTXO(input *types.OutPoint) error
 	GetAddressUTXOs(programHash *Uint168) ([]*UTXO, error)
 
 	ResetDataStore() error
@@ -296,7 +299,7 @@ func (store *DataStoreImpl) AddAddressUTXO(programHash *Uint168, utxo *UTXO) err
 	return nil
 }
 
-func (store *DataStoreImpl) DeleteUTXO(op *OutPoint) error {
+func (store *DataStoreImpl) DeleteUTXO(op *types.OutPoint) error {
 	store.Lock()
 	defer store.Unlock()
 
@@ -333,7 +336,7 @@ func (store *DataStoreImpl) GetAddressUTXOs(programHash *Uint168) ([]*UTXO, erro
 			return nil, err
 		}
 
-		var op OutPoint
+		var op types.OutPoint
 		reader := bytes.NewReader(opBytes)
 		op.Deserialize(reader)
 

@@ -13,16 +13,20 @@ import (
 
 	"github.com/urfave/cli"
 
+	"github.com/elastos/Elastos.ELA.Utility/crypto"
+	. "github.com/elastos/Elastos.ELA.Utility/common"
+
+	"github.com/elastos/Elastos.ELA.SideChain/types"
+
+	"github.com/elastos/Elastos.ELA.SideChain.NeoVM/avm"
+	nc "github.com/elastos/Elastos.ELA.SideChain.NeoVM/contract"
+	"github.com/elastos/Elastos.ELA.SideChain.NeoVM/params"
+
 	"github.com/elastos/Elastos.ELA.Client.SideChain/config"
 	"github.com/elastos/Elastos.ELA.Client.SideChain/log"
 	"github.com/elastos/Elastos.ELA.Client.SideChain/rpc"
 	walt "github.com/elastos/Elastos.ELA.Client.SideChain/wallet"
-	. "github.com/elastos/Elastos.ELA.SideChain/core"
-	"github.com/elastos/Elastos.ELA.SideChain/contract"
-	"github.com/elastos/Elastos.ELA.SideChain/vm"
-	"github.com/elastos/Elastos.ELA.Utility/crypto"
-	. "github.com/elastos/Elastos.ELA.Utility/common"
-	"github.com/elastos/Elastos.ELA.SideChain/common"
+	"github.com/elastos/Elastos.ELA.Client.SideChain/contract"
 )
 
 func createSmartContractTransaction(c *cli.Context, wallet walt.Wallet, fee *Fixed64) error {
@@ -82,7 +86,7 @@ func createTransaction(c *cli.Context, wallet walt.Wallet) error {
 		return errors.New("invalid transaction amount")
 	}
 
-	var txn *Transaction
+	var txn *types.Transaction
 	var to string
 	standard := c.String("to")
 	deposit := c.String("deposit")
@@ -108,7 +112,8 @@ func createTransaction(c *cli.Context, wallet walt.Wallet) error {
 			if err != nil {
 				return errors.New("create transaction failed: " + err.Error())
 			}
-			if spender[0] == PrefixSmartContract {
+
+			if spender[0] == params.PrefixSmartContract {
 				txn, err = createVerificationTransaction(c, wallet, from, to, amount, fee)
 			} else {
 				txn, err = wallet.CreateTransaction(from, to, amount, fee)
@@ -135,12 +140,12 @@ func createTransaction(c *cli.Context, wallet walt.Wallet) error {
 	return nil
 }
 
-func createVerificationTransaction(c *cli.Context, wallet walt.Wallet, from, to string, amount, fee *Fixed64) (*Transaction, error) {
+func createVerificationTransaction(c *cli.Context, wallet walt.Wallet, from, to string, amount, fee *Fixed64) (*types.Transaction, error) {
 
 	program := []byte{}
 	paramsString := c.String("params")
 	buffer := new(bytes.Buffer)
-	builder := vm.NewParamsBuider(buffer)
+	builder := avm.NewParamsBuider(buffer)
 	if paramsString != "" {
 		err := parseJsonToBytes(paramsString, builder)
 		if err != nil {
@@ -182,7 +187,7 @@ func createMultiOutputTransaction(c *cli.Context, wallet walt.Wallet, path, from
 	}
 
 	lockStr := c.String("lock")
-	var txn *Transaction
+	var txn *types.Transaction
 	if lockStr == "" {
 		txn, err = wallet.CreateMultiOutputTransaction(from, fee, multiOutput...)
 		if err != nil {
@@ -235,18 +240,18 @@ func createDeployTransaction(c *cli.Context, wallet walt.Wallet, fee *Fixed64) e
 		return errors.New("Invalid code with --hex <code>")
 	}
 
-	params := make([]string, 0)
+	param := make([]string, 0)
 	paramsStr := c.String("params")
 	if paramsStr != "" {
-		err = json.Unmarshal([]byte(paramsStr), &params)
+		err = json.Unmarshal([]byte(paramsStr), &param)
 		if err != nil {
 			return errors.New("Invalid format with --params <parameter type json>")
 		}
 	}
 
 	paramTypes := []byte{}
-	for _, v := range params {
-		if paramType, ok := contract.ParameterTypeMap[v]; ok {
+	for _, v := range param {
+		if paramType, ok := nc.ParameterTypeMap[v]; ok {
 			paramTypes = append(paramTypes, byte(paramType))
 		} else {
 			return errors.New(fmt.Sprint("Unsupport parameter type: \"", v, "\""))
@@ -254,7 +259,7 @@ func createDeployTransaction(c *cli.Context, wallet walt.Wallet, fee *Fixed64) e
 	}
 
 	returnTypeString := c.String("returntype")
-	returnType, ok := contract.ParameterTypeMap[returnTypeString]
+	returnType, ok := nc.ParameterTypeMap[returnTypeString]
 	if !ok {
 		return errors.New(fmt.Sprint("Unsupport return type: \"", returnTypeString, "\""))
 	}
@@ -274,18 +279,18 @@ func createDeployTransaction(c *cli.Context, wallet walt.Wallet, fee *Fixed64) e
 	}
 	if gasStr == "" {
 		//deploy is need 490 ela
-		value := Fixed64(490 * 100000000)
+		value := Fixed64(490.01 * 100000000)
 		gas = &value
 	}
 
-	if code[len(code) - 1] != SMARTCONTRACT {
-		code = append(code, SMARTCONTRACT)
-	}
+	//if code[len(code) - 1] != SMARTCONTRACT {
+	//	code = append(code, SMARTCONTRACT)
+	//}
 	txn, err := wallet.CreateDeployTransaction(from, code, paramTypes, byte(returnType), message, fee, gas)
-	programHash, err := crypto.ToProgramHash(code)
-	contract := &contract.Contract{
+	programHash, err := params.ToCodeHash(code)
+	contract := &nc.Contract{
 		Code:        code,
-		Parameters:  contract.ByteToContractParameterType(paramTypes),
+		Parameters:  nc.ByteToContractParameterType(paramTypes),
 		ProgramHash: *programHash,
 	}
 	// this code is generate a contractAddress when deployTransaction
@@ -294,7 +299,7 @@ func createDeployTransaction(c *cli.Context, wallet walt.Wallet, fee *Fixed64) e
 
 	ShowAccounts(addrs, &contract.ProgramHash, wallet)
 
-	return output(0, 0, txn);
+	return output(0, 0, txn)
 }
 
 func CreateInvokeTransaction(c *cli.Context, wallet walt.Wallet, fee *Fixed64) error {
@@ -302,7 +307,7 @@ func CreateInvokeTransaction(c *cli.Context, wallet walt.Wallet, fee *Fixed64) e
 	program := []byte{}
 	paramsString := c.String("params")
 	buffer := new(bytes.Buffer)
-	builder := vm.NewParamsBuider(buffer)
+	builder := avm.NewParamsBuider(buffer)
 	if paramsString != "" {
 		err := parseJsonToBytes(paramsString, builder)
 		if err != nil {
@@ -317,7 +322,7 @@ func CreateInvokeTransaction(c *cli.Context, wallet walt.Wallet, fee *Fixed64) e
 	codeHash := &Uint168{}
 	var codeHashBytes []byte
 	codeHashStr := c.String("hex")
-	avm := c.String("avm")
+	avmFile := c.String("avm")
 	if codeHashStr != "" {
 		codeHashBytes, err = HexStringToBytes(codeHashStr)
 		if err != nil {
@@ -325,14 +330,14 @@ func CreateInvokeTransaction(c *cli.Context, wallet walt.Wallet, fee *Fixed64) e
 		}
 		codeHash, err = Uint168FromBytes(codeHashBytes)
 		if err == nil {
-			program = append(program, vm.TAILCALL)
+			program = append(program, avm.TAILCALL)
 		} else {
 			codeHash = &Uint168{}
 		}
-		codeHashBytes = common.UInt168ToUInt160(codeHash)
+		codeHashBytes = params.UInt168ToUInt160(codeHash)
 		program = append(program, codeHashBytes...)
-	} else if avm != "" {
-		code, err := ioutil.ReadFile(avm)
+	} else if avmFile != "" {
+		code, err := ioutil.ReadFile(avmFile)
 		if err != nil {
 			return err
 		}
@@ -373,7 +378,7 @@ func CreateInvokeTransaction(c *cli.Context, wallet walt.Wallet, fee *Fixed64) e
 	return output(0, 0, txn);
 }
 
-func parseJsonToBytes(data string, builder *vm.ParamsBuilder) error {
+func parseJsonToBytes(data string, builder *avm.ParamsBuilder) error {
 	params := make([]map[string]interface{}, 0)
 	err := json.Unmarshal([]byte(data), &params)
 	if err != nil {
@@ -385,22 +390,32 @@ func parseJsonToBytes(data string, builder *vm.ParamsBuilder) error {
 			return errors.New("Invalid --params <parameter json>")
 		}
 		for paramType, paramValue := range v {
-			pt := contract.ParameterTypeMap[paramType]
+			pt := nc.ParameterTypeMap[paramType]
 			switch pt {
-			case contract.Boolean:
+			case nc.Boolean:
 				builder.EmitPushBool(paramValue.(bool))
-			case contract.Integer:
+			case nc.Integer:
 				value := paramValue.(float64)
 				builder.EmitPushInteger(int64(value))
-			case contract.String:
+			case nc.String:
 				builder.EmitPushByteArray([]byte(paramValue.(string)))
-			case contract.ByteArray, contract.Hash256, contract.Hash168:
+			case nc.PublicKey:
+				keyBytes, err := HexStringToBytes(strings.TrimSpace(paramValue.(string)))
+				if err != nil {
+					return err
+				}
+				_, err = crypto.DecodePoint(keyBytes)
+				if err != nil {
+					return err
+				}
+				builder.EmitPushByteArray(keyBytes)
+			case nc.ByteArray, nc.Hash256, nc.Hash168, nc.Signature:
 				paramBytes, err := HexStringToBytes(paramValue.(string))
 				if err != nil {
 					return errors.New(fmt.Sprint("Invalid param \"", paramType, "\": ", paramValue))
 				}
 				builder.EmitPushByteArray(paramBytes)
-			case contract.Hash160:
+			case nc.Hash160:
 				paramBytes, err := HexStringToBytes(paramValue.(string))
 				if err != nil {
 					return errors.New(fmt.Sprint("Invalid param \"", paramType, "\": ", paramValue))
@@ -411,7 +426,7 @@ func parseJsonToBytes(data string, builder *vm.ParamsBuilder) error {
 					paramBytes = temp
 				}
 				builder.EmitPushByteArray(paramBytes)
-			case contract.Array:
+			case nc.Array:
 				mjson,_ :=json.Marshal(paramValue)
 				count := len(paramValue.([]interface{}))
 				err := parseJsonToBytes(string(mjson), builder)
@@ -419,7 +434,7 @@ func parseJsonToBytes(data string, builder *vm.ParamsBuilder) error {
 					return err
 				}
 				builder.EmitPushInteger(int64(count))
-				builder.Emit(vm.PACK)
+				builder.Emit(avm.PACK)
 			}
 		}
 	}
@@ -438,16 +453,15 @@ func signTransaction(name string, password []byte, context *cli.Context, wallet 
 		return errors.New("decode transaction content failed")
 	}
 
-	var txn Transaction
+	var txn types.Transaction
 	err = txn.Deserialize(bytes.NewReader(rawData))
 	if err != nil {
 		return errors.New("deserialize transaction failed")
 	}
 
 	program := txn.Programs[0]
-
-	haveSign, needSign, err := crypto.GetSignStatus(program.Code, program.Parameter)
-	if haveSign == needSign {
+	haveSign, needSign, err := contract.GetSignStatus(program.Code, program.Parameter)
+	if haveSign == needSign  && haveSign != 0{
 		return errors.New("transaction was fully signed, no need more sign")
 	}
 
@@ -462,10 +476,7 @@ func signTransaction(name string, password []byte, context *cli.Context, wallet 
 	}
 
 	haveSign, needSign, _ = crypto.GetSignStatus(program.Code, program.Parameter)
-	signType := program.Code[len(program.Code) - 1]
-	if signType == SMARTCONTRACT {
-		needSign = haveSign
-	}
+
 	fmt.Println("[", haveSign, "/", needSign, "] Transaction successfully signed")
 
 	output(haveSign, needSign, &txn)
@@ -521,7 +532,7 @@ func getTransactionContent(context *cli.Context) (string, error) {
 	return content, nil
 }
 
-func output(haveSign, needSign int, txn *Transaction) error {
+func output(haveSign, needSign int, txn *types.Transaction) error {
 	// Serialise transaction content
 	buf := new(bytes.Buffer)
 	txn.Serialize(buf)
