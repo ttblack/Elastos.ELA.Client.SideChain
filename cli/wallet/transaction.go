@@ -283,9 +283,6 @@ func createDeployTransaction(c *cli.Context, wallet walt.Wallet, fee *Fixed64) e
 		gas = &value
 	}
 
-	//if code[len(code) - 1] != SMARTCONTRACT {
-	//	code = append(code, SMARTCONTRACT)
-	//}
 	txn, err := wallet.CreateDeployTransaction(from, code, paramTypes, byte(returnType), message, fee, gas)
 	programHash, err := params.ToCodeHash(code)
 	contract := &nc.Contract{
