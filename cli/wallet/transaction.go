@@ -332,6 +332,7 @@ func CreateInvokeTransaction(c *cli.Context, wallet walt.Wallet, fee *Fixed64) e
 			codeHash = &Uint168{}
 		}
 		codeHashBytes = params.UInt168ToUInt160(codeHash)
+		codeHashBytes = BytesReverse(codeHashBytes)
 		program = append(program, codeHashBytes...)
 	} else if avmFile != "" {
 		code, err := ioutil.ReadFile(avmFile)
