@@ -502,7 +502,7 @@ func (wallet *WalletImpl) CreateInvokeTransaction(fromAddress, toAddress string,
 	if err != nil {
 		return nil, errors.New("[Wallet], Get spenders account info failed")
 	}
-	txn := wallet.newTransaction(account.RedeemScript, txInputs, txOutputs, nt.Invoke)
+	txn := wallet.newTransaction(account.RedeemScript, txInputs, txOutputs, types.Invoke)
 	txn.Payload = &nt.PayloadInvoke{
 		Code:        code,
 		CodeHash:    *codeHash,

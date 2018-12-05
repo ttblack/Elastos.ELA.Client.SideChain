@@ -448,13 +448,13 @@ func signTransaction(name string, password []byte, context *cli.Context, wallet 
 	}
 	rawData, err := HexStringToBytes(content)
 	if err != nil {
-		return errors.New("decode transaction content failed")
+		return err
 	}
 
 	var txn types.Transaction
 	err = txn.Deserialize(bytes.NewReader(rawData))
 	if err != nil {
-		return errors.New("deserialize transaction failed")
+		return err
 	}
 
 	program := txn.Programs[0]
