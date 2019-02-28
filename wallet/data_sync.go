@@ -6,7 +6,7 @@ import (
 
 	"github.com/cheggaaa/pb"
 
-	. "github.com/elastos/Elastos.ELA.Utility/common"
+	. "github.com/elastos/Elastos.ELA/common"
 
 	"github.com/elastos/Elastos.ELA.SideChain/types"
 

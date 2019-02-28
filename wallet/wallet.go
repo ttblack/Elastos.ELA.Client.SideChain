@@ -8,8 +8,10 @@ import (
 	"math/rand"
 	"strconv"
 
-	. "github.com/elastos/Elastos.ELA.Utility/common"
-	"github.com/elastos/Elastos.ELA.Utility/crypto"
+	. "github.com/elastos/Elastos.ELA/common"
+	"github.com/elastos/Elastos.ELA/crypto"
+	ela "github.com/elastos/Elastos.ELA/core/contract"
+	"github.com/elastos/Elastos.ELA/account"
 
 	"github.com/elastos/Elastos.ELA.SideChain/types"
 
@@ -109,12 +111,13 @@ func (wallet *WalletImpl) Open(name string, password []byte) error {
 }
 
 func (wallet *WalletImpl) AddStandardAccount(publicKey *crypto.PublicKey) (*Uint168, error) {
-	redeemScript, err := crypto.CreateStandardRedeemScript(publicKey)
+	ct, err := ela.CreateStandardContractByPubKey(publicKey)
 	if err != nil {
 		return nil, errors.New("[Wallet], CreateStandardRedeemScript failed")
 	}
+	redeemScript := ct.Code
 
-	programHash, err := crypto.ToProgramHash(redeemScript)
+	programHash, err := ct.ToProgramHash()
 	if err != nil {
 		return nil, errors.New("[Wallet], CreateStandardAddress failed")
 	}
@@ -132,12 +135,7 @@ func (wallet *WalletImpl) AddMultiSignAccount(M uint, publicKeys ...*crypto.Publ
 	if err != nil {
 		return nil, errors.New("[Wallet], CreateStandardRedeemScript failed")
 	}
-
-	programHash, err := crypto.ToProgramHash(redeemScript)
-	if err != nil {
-		return nil, errors.New("[Wallet], CreateMultiSignAddress failed")
-	}
-
+	programHash := ToProgramHash(PrefixMultisig, redeemScript)
 	err = wallet.AddAddress(programHash, redeemScript, TypeMulti)
 	if err != nil {
 		return nil, err
@@ -553,7 +551,10 @@ func (wallet *WalletImpl) Sign(name string, password []byte, txn *types.Transact
 func (wallet *WalletImpl) signStandardTransaction(txn *types.Transaction) (*types.Transaction, error) {
 	code := txn.Programs[0].Code
 	// Get signer
-	programHash, err := crypto.GetSigner(code)
+	programHash, err := GetSigner(code)
+	if err != nil {
+		return nil, err
+	}
 	// Check if current user is a valid signer
 	if *programHash != *wallet.Keystore.GetProgramHash() {
 		return nil, errors.New("[Wallet], Invalid signer")
@@ -573,18 +574,29 @@ func (wallet *WalletImpl) signStandardTransaction(txn *types.Transaction) (*type
 	return txn, nil
 }
 
+func GetSigner(code []byte) (*Uint168, error) {
+	if len(code) != crypto.PublicKeyScriptLength || code[len(code)-1] != STANDARD {
+		return nil, errors.New("not a valid standard transaction code, length not match")
+	}
+	// remove last byte STANDARD
+	code = code[:len(code)-1]
+	script := make([]byte, crypto.PublicKeyScriptLength)
+	copy(script, code[:crypto.PublicKeyScriptLength])
+	return ToProgramHash(PrefixStandard, script), nil
+}
+
 func (wallet *WalletImpl) signMultiSignTransaction(txn *types.Transaction) (*types.Transaction, error) {
 	code := txn.Programs[0].Code
 	param := txn.Programs[0].Parameter
 	// Check if current user is a valid signer
 	var signerIndex = -1
-	programHashes, err := crypto.GetSigners(code)
+	programHashes, err := account.GetSigners(code)
 	if err != nil {
 		return nil, err
 	}
 	userProgramHash := wallet.Keystore.GetProgramHash()
 	for i, programHash := range programHashes {
-		if *userProgramHash == *programHash {
+		if userProgramHash.ToCodeHash().IsEqual(*programHash) {
 			signerIndex = i
 			break
 		}

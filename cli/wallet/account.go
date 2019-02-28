@@ -7,11 +7,12 @@ import (
 	"strings"
 	"io/ioutil"
 
+	"github.com/urfave/cli"
+
 	. "github.com/elastos/Elastos.ELA.Client.SideChain/wallet"
 
-	. "github.com/elastos/Elastos.ELA.Utility/common"
-	"github.com/elastos/Elastos.ELA.Utility/crypto"
-	"github.com/urfave/cli"
+	. "github.com/elastos/Elastos.ELA/common"
+	"github.com/elastos/Elastos.ELA/crypto"
 )
 
 func addAccount(context *cli.Context, wallet Wallet, content string) error {

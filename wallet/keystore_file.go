@@ -7,7 +7,7 @@ import (
 	"os"
 	"sync"
 
-	. "github.com/elastos/Elastos.ELA.Utility/common"
+	. "github.com/elastos/Elastos.ELA/common"
 )
 
 const (
@@ -39,6 +39,11 @@ func CreateKeystoreFile(name string) (*KeystoreFile, error) {
 	}
 
 	return file, nil
+}
+
+func FileExisted(filename string) bool {
+	_, err := os.Stat(filename)
+	return err == nil || os.IsExist(err)
 }
 
 func OpenKeystoreFile(name string) (*KeystoreFile, error) {

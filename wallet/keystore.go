@@ -8,8 +8,9 @@ import (
 	"errors"
 	"sync"
 
-	. "github.com/elastos/Elastos.ELA.Utility/common"
-	"github.com/elastos/Elastos.ELA.Utility/crypto"
+	. "github.com/elastos/Elastos.ELA/common"
+	"github.com/elastos/Elastos.ELA/crypto"
+	"github.com/elastos/Elastos.ELA/core/contract"
 
 	"github.com/elastos/Elastos.ELA.SideChain/types"
 )
@@ -202,13 +203,14 @@ func (store *KeystoreImpl) init(privateKey []byte, publicKey *crypto.PublicKey) 
 
 	var err error
 	// Set redeem script
-	store.redeemScript, err = crypto.CreateStandardRedeemScript(publicKey)
+	ct, err := contract.CreateStandardContractByPubKey(publicKey)
 	if err != nil {
 		return err
 	}
+	store.redeemScript = ct.Code
 
 	// Set program hash
-	store.programHash, err = crypto.ToProgramHash(store.redeemScript)
+	store.programHash, err = ct.ToProgramHash()
 	if err != nil {
 		return err
 	}
@@ -238,7 +240,7 @@ func (store *KeystoreImpl) verifyPassword(password []byte) error {
 	if err != nil {
 		return err
 	}
-	if IsEqualBytes(origin, passwordHash[:]) {
+	if bytes.Equal(origin, passwordHash[:]) {
 		return nil
 	}
 	return errors.New("password wrong")

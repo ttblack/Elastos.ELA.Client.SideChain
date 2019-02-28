@@ -10,9 +10,11 @@ import (
 	"github.com/elastos/Elastos.ELA.Client.SideChain/log"
 	"github.com/elastos/Elastos.ELA.Client.SideChain/wallet"
 
-	"github.com/elastos/Elastos.ELA.Utility/common"
+	"github.com/elastos/Elastos.ELA/common"
+
 	"github.com/urfave/cli"
 	"golang.org/x/crypto/ripemd160"
+
 	"github.com/elastos/Elastos.ELA.Client.SideChain/contract"
 )
 
