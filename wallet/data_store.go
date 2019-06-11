@@ -11,7 +11,7 @@ import (
 
 	. "github.com/elastos/Elastos.ELA/common"
 
-	"github.com/elastos/Elastos.ELA.SideChain.NeoVM/contract"
+	ntype "github.com/elastos/Elastos.ELA.SideChain.NeoVM/types"
 
 	"github.com/elastos/Elastos.ELA.SideChain/types"
 
@@ -59,7 +59,7 @@ type DataStore interface {
 	CurrentHeight(height uint32) uint32
 
 	AddAddress(programHash *Uint168, redeemScript []byte, addrType int) error
-	AddContractAddress(contract contract.Contract) error
+	AddContractAddress(contract ntype.Contract) error
 	DeleteAddress(programHash *Uint168) error
 	GetAddressInfo(programHash *Uint168) (*Address, error)
 	GetAddresses() ([]*Address, error)
@@ -177,10 +177,10 @@ func (store *DataStoreImpl) AddAddress(programHash *Uint168, redeemScript []byte
 	return nil
 }
 
-func (store *DataStoreImpl) AddContractAddress(ct contract.Contract) error {
+func (store *DataStoreImpl) AddContractAddress(ct ntype.Contract) error {
 	store.Lock()
 	defer store.Unlock()
-	parameter := contract.ContractParameterTypeToByte(ct.Parameters)
+	parameter := ntype.ContractParameterTypeToByte(ct.Parameters)
 
 	sql := "INSERT INTO Addresses(ProgramHash, RedeemScript, Parameter, Type) values(?,?,?,?)"
 	_, err := store.Exec(sql, ct.ProgramHash.Bytes(), ct.Code, parameter, TypeContract)

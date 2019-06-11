@@ -203,17 +203,14 @@ func (store *KeystoreImpl) init(privateKey []byte, publicKey *crypto.PublicKey) 
 
 	var err error
 	// Set redeem script
-	ct, err := contract.CreateStandardContractByPubKey(publicKey)
+	ct, err := contract.CreateStandardContract(publicKey)
 	if err != nil {
 		return err
 	}
 	store.redeemScript = ct.Code
 
 	// Set program hash
-	store.programHash, err = ct.ToProgramHash()
-	if err != nil {
-		return err
-	}
+	store.programHash = ct.ToProgramHash()
 
 	// Set address
 	store.address, err = store.programHash.ToAddress()

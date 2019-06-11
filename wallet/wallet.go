@@ -14,12 +14,10 @@ import (
 	"github.com/elastos/Elastos.ELA/account"
 
 	"github.com/elastos/Elastos.ELA.SideChain/types"
-
-	nt "github.com/elastos/Elastos.ELA.SideChain.NeoVM/types"
-	nc "github.com/elastos/Elastos.ELA.SideChain.NeoVM/contract"
-
 	"github.com/elastos/Elastos.ELA.Client.SideChain/contract"
 	"github.com/elastos/Elastos.ELA.Client.SideChain/log"
+
+	nt "github.com/elastos/Elastos.ELA.SideChain.NeoVM/types"
 )
 
 const (
@@ -111,13 +109,13 @@ func (wallet *WalletImpl) Open(name string, password []byte) error {
 }
 
 func (wallet *WalletImpl) AddStandardAccount(publicKey *crypto.PublicKey) (*Uint168, error) {
-	ct, err := ela.CreateStandardContractByPubKey(publicKey)
+	ct, err := ela.CreateStandardContract(publicKey)
 	if err != nil {
 		return nil, errors.New("[Wallet], CreateStandardRedeemScript failed")
 	}
 	redeemScript := ct.Code
 
-	programHash, err := ct.ToProgramHash()
+	programHash := ct.ToProgramHash()
 	if err != nil {
 		return nil, errors.New("[Wallet], CreateStandardAddress failed")
 	}
@@ -131,12 +129,13 @@ func (wallet *WalletImpl) AddStandardAccount(publicKey *crypto.PublicKey) (*Uint
 }
 
 func (wallet *WalletImpl) AddMultiSignAccount(M uint, publicKeys ...*crypto.PublicKey) (*Uint168, error) {
-	redeemScript, err := crypto.CreateMultiSignRedeemScript(M, publicKeys)
+	redeemScript, err := ela.CreateMultiSigContract(int(M), publicKeys)
 	if err != nil {
 		return nil, errors.New("[Wallet], CreateStandardRedeemScript failed")
 	}
-	programHash := ToProgramHash(PrefixMultisig, redeemScript)
-	err = wallet.AddAddress(programHash, redeemScript, TypeMulti)
+
+	programHash := redeemScript.ToProgramHash()
+	err = wallet.AddAddress(programHash, redeemScript.Code, TypeMulti)
 	if err != nil {
 		return nil, err
 	}
@@ -412,8 +411,8 @@ func (wallet *WalletImpl) CreateDeployTransaction(fromAddress string, code, para
 	txn := wallet.newTransaction(account.RedeemScript, txInputs, txOutputs, types.Deploy)
 	fc := nt.FunctionCode{
 		Code:           code,
-		ParameterTypes: nc.ByteToContractParameterType(parameterTypes),
-		ReturnType:     nc.ContractParameterType(returnType),
+		ParameterTypes: nt.ByteToContractParameterType(parameterTypes),
+		ReturnType:     nt.ContractParameterType(returnType),
 	}
 
 	txn.Payload = &nt.PayloadDeploy{
@@ -582,7 +581,7 @@ func GetSigner(code []byte) (*Uint168, error) {
 	code = code[:len(code)-1]
 	script := make([]byte, crypto.PublicKeyScriptLength)
 	copy(script, code[:crypto.PublicKeyScriptLength])
-	return ToProgramHash(PrefixStandard, script), nil
+	return ToProgramHash(byte(ela.PrefixStandard), script), nil
 }
 
 func (wallet *WalletImpl) signMultiSignTransaction(txn *types.Transaction) (*types.Transaction, error) {

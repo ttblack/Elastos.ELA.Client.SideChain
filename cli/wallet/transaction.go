@@ -19,8 +19,8 @@ import (
 	"github.com/elastos/Elastos.ELA.SideChain/types"
 
 	"github.com/elastos/Elastos.ELA.SideChain.NeoVM/avm"
-	nc "github.com/elastos/Elastos.ELA.SideChain.NeoVM/contract"
-	"github.com/elastos/Elastos.ELA.SideChain.NeoVM/params"
+	ncom "github.com/elastos/Elastos.ELA.SideChain.NeoVM/common"
+	nt "github.com/elastos/Elastos.ELA.SideChain.NeoVM/types"
 
 	"github.com/elastos/Elastos.ELA.Client.SideChain/config"
 	"github.com/elastos/Elastos.ELA.Client.SideChain/log"
@@ -113,7 +113,7 @@ func createTransaction(c *cli.Context, wallet walt.Wallet) error {
 				return errors.New("create transaction failed: " + err.Error())
 			}
 
-			if spender[0] == params.PrefixSmartContract {
+			if spender[0] == ncom.PrefixSmartContract {
 				txn, err = createVerificationTransaction(c, wallet, from, to, amount, fee)
 			} else {
 				txn, err = wallet.CreateTransaction(from, to, amount, fee)
@@ -251,7 +251,7 @@ func createDeployTransaction(c *cli.Context, wallet walt.Wallet, fee *Fixed64) e
 
 	paramTypes := []byte{}
 	for _, v := range param {
-		if paramType, ok := nc.ParameterTypeMap[v]; ok {
+		if paramType, ok := nt.ParameterTypeMap[v]; ok {
 			paramTypes = append(paramTypes, byte(paramType))
 		} else {
 			return errors.New(fmt.Sprint("Unsupport parameter type: \"", v, "\""))
@@ -259,7 +259,7 @@ func createDeployTransaction(c *cli.Context, wallet walt.Wallet, fee *Fixed64) e
 	}
 
 	returnTypeString := c.String("returntype")
-	returnType, ok := nc.ParameterTypeMap[returnTypeString]
+	returnType, ok := nt.ParameterTypeMap[returnTypeString]
 	if !ok {
 		return errors.New(fmt.Sprint("Unsupport return type: \"", returnTypeString, "\""))
 	}
@@ -284,10 +284,10 @@ func createDeployTransaction(c *cli.Context, wallet walt.Wallet, fee *Fixed64) e
 	}
 
 	txn, err := wallet.CreateDeployTransaction(from, code, paramTypes, byte(returnType), message, fee, gas)
-	programHash, err := params.ToCodeHash(code)
-	contract := &nc.Contract{
+	programHash, err := ncom.ToCodeHash(code)
+	contract := &nt.Contract{
 		Code:        code,
-		Parameters:  nc.ByteToContractParameterType(paramTypes),
+		Parameters:  nt.ByteToContractParameterType(paramTypes),
 		ProgramHash: *programHash,
 	}
 	// this code is generate a contractAddress when deployTransaction
@@ -331,7 +331,7 @@ func CreateInvokeTransaction(c *cli.Context, wallet walt.Wallet, fee *Fixed64) e
 		} else {
 			codeHash = &Uint168{}
 		}
-		codeHashBytes = params.UInt168ToUInt160(codeHash)
+		codeHashBytes = ncom.UInt168ToUInt160(codeHash)
 		codeHashBytes = BytesReverse(codeHashBytes)
 		program = append(program, codeHashBytes...)
 	} else if avmFile != "" {
@@ -373,7 +373,7 @@ func CreateInvokeTransaction(c *cli.Context, wallet walt.Wallet, fee *Fixed64) e
 		return err
 	}
 
-	return output(0, 0, txn);
+	return output(0, 0, txn)
 }
 
 func parseJsonToBytes(data string, builder *avm.ParamsBuilder) error {
@@ -388,16 +388,16 @@ func parseJsonToBytes(data string, builder *avm.ParamsBuilder) error {
 			return errors.New("Invalid --params <parameter json>")
 		}
 		for paramType, paramValue := range v {
-			pt := nc.ParameterTypeMap[paramType]
+			pt := nt.ParameterTypeMap[paramType]
 			switch pt {
-			case nc.Boolean:
+			case nt.Boolean:
 				builder.EmitPushBool(paramValue.(bool))
-			case nc.Integer:
+			case nt.Integer:
 				value := paramValue.(float64)
 				builder.EmitPushInteger(int64(value))
-			case nc.String:
+			case nt.String:
 				builder.EmitPushByteArray([]byte(paramValue.(string)))
-			case nc.PublicKey:
+			case nt.PublicKey:
 				keyBytes, err := HexStringToBytes(strings.TrimSpace(paramValue.(string)))
 				if err != nil {
 					return err
@@ -407,13 +407,13 @@ func parseJsonToBytes(data string, builder *avm.ParamsBuilder) error {
 					return err
 				}
 				builder.EmitPushByteArray(keyBytes)
-			case nc.ByteArray, nc.Hash256, nc.Hash168, nc.Signature:
+			case nt.ByteArray, nt.Hash256, nt.Hash168, nt.Signature:
 				paramBytes, err := HexStringToBytes(paramValue.(string))
 				if err != nil {
 					return errors.New(fmt.Sprint("Invalid param \"", paramType, "\": ", paramValue))
 				}
 				builder.EmitPushByteArray(paramBytes)
-			case nc.Hash160:
+			case nt.Hash160:
 				paramBytes, err := HexStringToBytes(paramValue.(string))
 				if err != nil {
 					return errors.New(fmt.Sprint("Invalid param \"", paramType, "\": ", paramValue))
@@ -424,7 +424,7 @@ func parseJsonToBytes(data string, builder *avm.ParamsBuilder) error {
 					paramBytes = temp
 				}
 				builder.EmitPushByteArray(paramBytes)
-			case nc.Array:
+			case nt.Array:
 				mjson,_ :=json.Marshal(paramValue)
 				count := len(paramValue.([]interface{}))
 				err := parseJsonToBytes(string(mjson), builder)

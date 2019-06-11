@@ -8,11 +8,11 @@ import (
 	"github.com/elastos/Elastos.ELA/common"
 	"github.com/elastos/Elastos.ELA/crypto"
 
-	"github.com/elastos/Elastos.ELA.SideChain.NeoVM/contract"
-	"github.com/elastos/Elastos.ELA.SideChain.NeoVM/params"
+	nc "github.com/elastos/Elastos.ELA.SideChain.NeoVM/common"
+	"github.com/elastos/Elastos.ELA.SideChain.NeoVM/types"
 )
 
-func CreateContractAddress(context *cli.Context) (*contract.Contract, error)  {
+func CreateContractAddress(context *cli.Context) (*types.Contract, error)  {
 	avm := context.String("file")
 	if avm == "" {
 		return nil, errors.New("lose avm file param")
@@ -26,11 +26,11 @@ func CreateContractAddress(context *cli.Context) (*contract.Contract, error)  {
 	if err != nil {
 		return nil, err
 	}
-	programHash, err := params.ToCodeHash(code)
+	programHash, err := nc.ToCodeHash(code)
 
-	contract := &contract.Contract{
+	contract := &types.Contract{
 		Code:        code,
-		Parameters:  contract.ByteToContractParameterType(param),
+		Parameters:  types.ByteToContractParameterType(param),
 		ProgramHash: *programHash,
 	}
 	return contract, nil
