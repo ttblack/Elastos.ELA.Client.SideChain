@@ -17,6 +17,9 @@ func infoAction(c *cli.Context) error {
 		return nil
 	}
 
+	rpc.RpcUser = c.String("rpcuser")
+	rpc.RpcPassword = c.String("rpcpassword")
+
 	if c.Bool("connections") {
 		result, err := rpc.Call("getconnectioncount", nil)
 		if err != nil {
@@ -169,6 +172,14 @@ func NewCommand() *cli.Command {
 			cli.BoolFlag{
 				Name:  "showtxpool, txpool",
 				Usage: "show transactions in node's transaction pool",
+			},
+			cli.StringFlag{
+				Name:  "rpcuser",
+				Usage: "username for JSON-RPC connections",
+			},
+			cli.StringFlag{
+				Name:  "rpcpassword",
+				Usage: "password for JSON-RPC connections",
 			},
 		},
 		Action: infoAction,

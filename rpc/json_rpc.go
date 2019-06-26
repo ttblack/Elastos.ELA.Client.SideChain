@@ -3,15 +3,27 @@ package rpc
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
+	"bytes"
 	"io/ioutil"
 	"net/http"
-	"strings"
 
 	"github.com/elastos/Elastos.ELA.Client.SideChain/config"
 
 	"github.com/elastos/Elastos.ELA/common"
 )
+
+var (
+	RpcUser     = ""
+	RpcPassword = ""
+)
+
+// Request represent the standard JSON-RPC request data structure.
+type Request struct {
+	Id      interface{} `json:"id"`
+	Version string      `json:"jsonrpc"`
+	Method  string      `json:"method"`
+	Params  interface{} `json:"params"`
+}
 
 type Response struct {
 	ID      int64  `json:"id"`
@@ -61,10 +73,12 @@ func GetBlock(hash *common.Uint256) (*BlockInfo, error) {
 	return block, nil
 }
 
+// Call is a util method to send a JSON-RPC request to server.
 func Call(method string, params map[string]interface{}) ([]byte, error) {
 	if url == "" {
 		url = "http://" + config.Params().Host
 	}
+
 	data, err := json.Marshal(map[string]interface{}{
 		"method": method,
 		"params": params,
@@ -72,11 +86,14 @@ func Call(method string, params map[string]interface{}) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-
-	//fmt.Println("Request:", string(data))
-	resp, err := http.Post(url, "application/json", strings.NewReader(string(data)))
+	req, err := http.NewRequest("POST", url, bytes.NewReader(data))
 	if err != nil {
-		fmt.Printf("POST requset: %v\n", err)
+		return nil, err
+	}
+	req.Header.Set("Content-Type", "application/json")
+	req.SetBasicAuth(RpcUser, RpcPassword)
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
 		return nil, err
 	}
 	defer resp.Body.Close()
@@ -85,7 +102,6 @@ func Call(method string, params map[string]interface{}) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	//fmt.Println("Response:", string(body))
 
 	return body, nil
 }
@@ -99,7 +115,7 @@ func CallAndUnmarshal(method string, params map[string]interface{}) (interface{}
 	var resp Response
 	err = json.Unmarshal(body, &resp)
 	if err != nil {
-		return string(body), nil
+		return string(body), err
 	}
 
 	if resp.Error != nil {

@@ -11,12 +11,13 @@ import (
 	"github.com/elastos/Elastos.ELA.Client.SideChain/wallet"
 
 	"github.com/elastos/Elastos.ELA/common"
+	elac "github.com/elastos/Elastos.ELA/core/contract"
 
 	"github.com/urfave/cli"
 	"golang.org/x/crypto/ripemd160"
 
 	"github.com/elastos/Elastos.ELA.Client.SideChain/contract"
-	elac "github.com/elastos/Elastos.ELA/core/contract"
+	"github.com/elastos/Elastos.ELA.Client.SideChain/rpc"
 )
 
 const (
@@ -157,6 +158,9 @@ func walletAction(context *cli.Context) {
 	}
 	name := context.String("name")
 	pass := context.String("password")
+
+	rpc.RpcUser = context.String("rpcuser")
+	rpc.RpcPassword = context.String("rpcpassword")
 
 	// import wallet from an exited private key
 	if privateKey := context.String("import"); len(privateKey) > 0 {
@@ -449,6 +453,14 @@ func NewCommand() *cli.Command {
 			cli.StringFlag{
 				Name:  "contract",
 				Usage: "create smartContract address",
+			},
+			cli.StringFlag{
+				Name:  "rpcuser",
+				Usage: "username for JSON-RPC connections",
+			},
+			cli.StringFlag{
+				Name:  "rpcpassword",
+				Usage: "password for JSON-RPC connections",
 			},
 		},
 		Action: walletAction,
