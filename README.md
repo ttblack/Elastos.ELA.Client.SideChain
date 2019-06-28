@@ -344,6 +344,10 @@ Create a invoke transaction
 
 `$ ./side-cli wallet -t create -i --hex 1c483e6d46c2fd9678392bc225d0e2ab93223eea25 --fee 0.001 --from EeuTU5nY5RtyKbYSPHmT7934aexapBeECT --to CfHhqtVCo7RBzg4427kzryqxCk1uRyjZbZ --amount 1 -p 123 --params='[{"String":"deploy"},{"Array":[{"Hash160":"21ee9737eda27983b2c72259dc4d81635fb9da09c8"},{"Hash160":"1cfa5dc776704d23dbeae42ba8e97c77efaee4180d"},{"Integer":1}]}]' --gas 0`
 
+Create a withdraw transaction
+
+$ ./side-cli wallet -t create --from EXiCyZBdvguJU5upFGZwUQMJFB53TBb6km --withdraw EXYPqZpQQk4muDrdXoRNJhCpoQtFBQetYg --amount 10000 --fee 0.00001
+
 Sign a transaction
 
 `$ ./side-cli wallet -t sign --file to_be_signed.txn`
